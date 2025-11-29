@@ -2,7 +2,7 @@
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
-    <title>App Leonor - Família Pro V9</title>
+    <title>App Leonor - Família Pro V10</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <!-- Meta tags para parecer App Nativa -->
@@ -118,7 +118,52 @@
         /* MODAL GERAL (Para Resumo e Imagens) */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; display: none; justify-content: center; align-items: center; flex-direction: column; padding: 16px; backdrop-filter: blur(5px); }
         .modal-content { background: #240021; padding: 20px; border-radius: 12px; width: 100%; max-width: 400px; max-height: 80vh; overflow-y: auto; border: 1px solid #fb7185; color: white; text-align: center; }
-        .full-img { max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        
+        /* ESTILOS DE ZOOM */
+        #imgScrollContainer {
+            width: 100%;
+            height: 70vh; /* Altura fixa para permitir scroll */
+            overflow: auto; /* Permite arrastar (scroll) */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            background: #000;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        .full-img { 
+            max-width: 100%; 
+            object-fit: contain; 
+            transition: width 0.2s ease; /* Animação suave no zoom */
+        }
+        .zoom-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 15px;
+            background: rgba(0,0,0,0.5);
+            padding: 8px;
+            border-radius: 99px;
+            border: 1px solid #fb7185;
+        }
+        .btn-zoom {
+            background: #db2777;
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .btn-zoom:active { transform: scale(0.9); }
+
         .close-modal { margin-top: 15px; background: #be185d; color: white; padding: 10px 24px; border: none; border-radius: 99px; font-weight: bold; cursor: pointer; font-size: 14px; }
         .summary-line { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(251, 207, 232, 0.2); font-size: 14px; text-align: left; }
         .summary-line:last-child { border-bottom: none; }
@@ -131,15 +176,27 @@
 
 <!-- MODAL UNIVERSAL -->
 <div id="universalModal" class="modal-overlay">
-    <div id="modalContentBox" class="modal-content">
+    <!-- Conteúdo Genérico (Resumos) -->
+    <div id="modalContentBox" class="modal-content" style="display:none;">
         <h3 id="modalTitle" style="margin-bottom:15px; color:#fbcfe8;"></h3>
         <div id="modalBody"></div>
         <button class="close-modal" onclick="closeModal()">Fechar</button>
     </div>
-    <!-- Container especial para imagem full screen (sem caixa) -->
-    <div id="modalImageBox" style="display:none; text-align:center; width:100%;">
-        <img id="modalFullImg" class="full-img">
-        <br>
+    
+    <!-- Visualizador de Imagem com Zoom -->
+    <div id="modalImageBox" style="display:none; text-align:center; width:100%; max-width: 600px;">
+        <!-- Controlos de Zoom -->
+        <div class="zoom-controls">
+            <button class="btn-zoom" onclick="zoomOut()">-</button>
+            <span style="display:flex;align-items:center;color:white;font-size:12px">ZOOM</span>
+            <button class="btn-zoom" onclick="zoomIn()">+</button>
+        </div>
+        
+        <!-- Área de Scroll -->
+        <div id="imgScrollContainer">
+            <img id="modalFullImg" class="full-img">
+        </div>
+        
         <button class="close-modal" onclick="closeModal()">Fechar</button>
     </div>
 </div>
@@ -213,7 +270,7 @@
                 </div>
             </div>
             <div style="text-align:center; font-size:10px; color:#fbcfe8; margin-top:20px; opacity:0.6;">
-                Versão Família Pro V9 • Auto-Híbrida
+                Versão Família Pro V10 • Zoom 2.0
             </div>
         </div>
 
@@ -710,14 +767,44 @@
         }
     }
 
-    // NOVA FUNÇÃO: VER IMAGEM GRANDE
+    // NOVA FUNÇÃO: VER IMAGEM GRANDE COM ZOOM
+    let currentZoom = 1;
     function showFullImage(id) {
         const data = medicinaData['img'+id];
         if(!data) { alert("Sem imagem para ver."); return; }
+        
+        // Reset
+        resetZoom();
+        
         document.getElementById('modalContentBox').style.display = 'none';
         document.getElementById('modalImageBox').style.display = 'block';
         document.getElementById('modalFullImg').src = data;
         document.getElementById('universalModal').style.display = 'flex';
+    }
+
+    function zoomIn() {
+        currentZoom += 0.5;
+        if(currentZoom > 5) currentZoom = 5;
+        applyZoom();
+    }
+    function zoomOut() {
+        currentZoom -= 0.5;
+        if(currentZoom < 1) currentZoom = 1;
+        applyZoom();
+    }
+    function resetZoom() {
+        currentZoom = 1;
+        applyZoom();
+    }
+    function applyZoom() {
+        const img = document.getElementById('modalFullImg');
+        if(currentZoom > 1) {
+            img.style.maxWidth = 'none'; // Liberta o tamanho
+            img.style.width = (currentZoom * 100) + '%';
+        } else {
+            img.style.maxWidth = '100%';
+            img.style.width = 'auto';
+        }
     }
 
     /* 6. CALCULADORA */
