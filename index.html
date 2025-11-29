@@ -11,11 +11,18 @@
     <!-- Ícone para "Adicionar ao Ecrã Principal" (iOS/Android) -->
     <link rel="apple-touch-icon" href="Gemini_Generated_Image_f4pi7bf4pi7bf4pi-removebg-preview.png">
     
-    <!-- Meta tags para parecer App Nativa -->
+    <!-- TRUQUE: MANIFESTO EMBUTIDO PARA REMOVER BARRA DE ENDEREÇO (ANDROID/CHROME) -->
+    <!-- Isto força o telemóvel a abrir em modo "Standalone" (Ecrã Inteiro) -->
+    <link rel="manifest" href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22App%20Leonor%22%2C%22short_name%22%3A%22Leonor%22%2C%22display%22%3A%22standalone%22%2C%22start_url%22%3A%22.%22%2C%22background_color%22%3A%22%23170015%22%2C%22theme_color%22%3A%22%23240021%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22Gemini_Generated_Image_f4pi7bf4pi7bf4pi-removebg-preview.png%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D'>
+    
+    <!-- Meta tags para parecer App Nativa (iOS/SAFARI) -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="App Leonor">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="format-detection" content="telephone=no">
+    
+    <!-- Cor do tema para o browser (caso a barra apareça momentaneamente) -->
+    <meta name="theme-color" content="#240021">
 
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
