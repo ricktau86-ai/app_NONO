@@ -113,7 +113,7 @@
 
         /* DESPENSA */
         .card-despensa { background: white; color: #333; border-radius: 12px; padding: 10px; margin-bottom: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .card-despensa.low { border: 2px solid #fca5a5; background: #fef2f2; }
+        .card-despensa.low { border: 2px solid #ef4444; background: #fef2f2; } /* Borda mais vermelha */
         .row-stock { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; font-size: 13px; }
         .counter-grp { display: flex; align-items: center; gap: 8px; background: #f3f4f6; padding: 2px 8px; border-radius: 99px; }
         .counter-btn { width: 24px; height: 24px; border-radius: 50%; border: none; background: white; font-weight: bold; color: #be185d; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
@@ -906,9 +906,40 @@
     function renderInventory() {
         const list = document.getElementById('despensaList'); list.innerHTML="";
         inventoryData.forEach((item, idx) => {
-            const isLow = (item.home<2 || item.rx<2);
-            const div = document.createElement('div'); div.className = `card-despensa ${isLow?'low':''}`;
-            div.innerHTML = `<div style="display:flex;justify-content:space-between;font-weight:bold;"><span>${item.name}</span></div><div class="row-stock"><span>🏠 Casa</span><div class="counter-grp"><button class="counter-btn" onclick="invChange(${idx},'home',-1)">-</button><span>${item.home}</span><button class="counter-btn" onclick="invChange(${idx},'home',1)">+</button></div></div><div class="row-stock"><span>💊 Farmácia</span><div class="counter-grp"><button class="counter-btn" onclick="invChange(${idx},'rx',-1)">-</button><span>${item.rx}</span><button class="counter-btn" onclick="invChange(${idx},'rx',1)">+</button></div></div><button class="btn-trash" onclick="invDel(${idx})">Apagar</button>`;
+            const isLowHome = item.home < 2;
+            const isLowRx = item.rx < 2;
+            const isLow = (isLowHome || isLowRx);
+
+            const div = document.createElement('div'); 
+            div.className = `card-despensa ${isLow?'low':''}`;
+            
+            // Ícones de alerta
+            const alertHome = isLowHome ? '<span style="color:#ef4444; margin-left:4px;">⚠️</span>' : '';
+            const alertRx = isLowRx ? '<span style="color:#ef4444; margin-left:4px;">⚠️</span>' : '';
+            const headerAlert = isLow ? '<span style="font-size:10px; background:#fee2e2; color:#b91c1c; padding:2px 6px; border-radius:4px;">REPOR</span>' : '';
+
+            div.innerHTML = `
+                <div style="display:flex;justify-content:space-between;font-weight:bold; align-items:center;">
+                    <span>${item.name}</span>
+                    ${headerAlert}
+                </div>
+                <div class="row-stock">
+                    <span>🏠 Casa</span>
+                    <div class="counter-grp" style="${isLowHome ? 'border:1px solid #ef4444; background:#fee2e2;' : ''}">
+                        <button class="counter-btn" onclick="invChange(${idx},'home',-1)">-</button>
+                        <span style="${isLowHome ? 'color:#b91c1c; font-weight:bold;' : ''}">${item.home}${alertHome}</span>
+                        <button class="counter-btn" onclick="invChange(${idx},'home',1)">+</button>
+                    </div>
+                </div>
+                <div class="row-stock">
+                    <span>💊 Farmácia</span>
+                    <div class="counter-grp" style="${isLowRx ? 'border:1px solid #ef4444; background:#fee2e2;' : ''}">
+                        <button class="counter-btn" onclick="invChange(${idx},'rx',-1)">-</button>
+                        <span style="${isLowRx ? 'color:#b91c1c; font-weight:bold;' : ''}">${item.rx}${alertRx}</span>
+                        <button class="counter-btn" onclick="invChange(${idx},'rx',1)">+</button>
+                    </div>
+                </div>
+                <button class="btn-trash" onclick="invDel(${idx})">Apagar</button>`;
             list.appendChild(div);
         });
     }
@@ -922,10 +953,20 @@
         
         let html = "";
         inventoryData.forEach(item => {
+            const isLowHome = item.home < 2;
+            const isLowRx = item.rx < 2;
+            
+            // Se tiver pouco stock, destaca a linha a vermelho
+            const style = (isLowHome || isLowRx) ? "color:#fca5a5; font-weight:bold;" : "";
+            const icon = (isLowHome || isLowRx) ? "⚠️" : "";
+
             html += `
-            <div class="summary-line">
-                <span>${item.name}</span>
-                <span class="summary-vals">🏠${item.home} | 💊${item.rx}</span>
+            <div class="summary-line" style="${style}">
+                <span>${item.name} ${icon}</span>
+                <span class="summary-vals">
+                    🏠${item.home}${isLowHome ? ' (BAIXO)' : ''} | 
+                    💊${item.rx}${isLowRx ? ' (BAIXO)' : ''}
+                </span>
             </div>`;
         });
         
