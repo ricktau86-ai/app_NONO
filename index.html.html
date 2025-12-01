@@ -1,0 +1,1789 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>App Leonor - Família Pro V10</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- CONFIGURAÇÃO DO ÍCONE (APP) -->
+    <!-- Ícone para browser (tab) -->
+    <link rel="icon" type="image/png" href="Gemini_Generated_Image_f4pi7bf4pi7bf4pi-removebg-preview.png">
+    <!-- Ícone para "Adicionar ao Ecrã Principal" (iOS/Android) -->
+    <link rel="apple-touch-icon" href="Gemini_Generated_Image_f4pi7bf4pi7bf4pi-removebg-preview.png">
+    
+    <!-- TRUQUE: MANIFESTO EMBUTIDO PARA REMOVER BARRA DE ENDEREÇO (ANDROID/CHROME) -->
+    <!-- Isto força o telemóvel a abrir em modo "Standalone" (Ecrã Inteiro) -->
+    <link rel="manifest" href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22App%20Leonor%22%2C%22short_name%22%3A%22Leonor%22%2C%22display%22%3A%22standalone%22%2C%22start_url%22%3A%22.%22%2C%22background_color%22%3A%22%23fff1f2%22%2C%22theme_color%22%3A%22%23ec4899%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22Gemini_Generated_Image_f4pi7bf4pi7bf4pi-removebg-preview.png%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D'>
+    
+    <!-- Meta tags para parecer App Nativa (iOS/SAFARI) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="App Leonor">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
+    
+    <!-- Cor do tema para o browser -->
+    <meta name="theme-color" content="#ec4899">
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+
+    <!-- Fonte igual aos relatórios -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #ec4899;       /* Pink 500 */
+            --primary-dark: #be185d;  /* Pink 700 */
+            --primary-light: #fce7f3; /* Pink 100 */
+            --accent: #f472b6;        /* Pink 400 */
+            --bg-body: #fff1f2;       /* Rose 50 */
+            --card-bg: #ffffff;
+            --text-main: #374151;     /* Gray 700 */
+            --text-sub: #6b7280;      /* Gray 500 */
+            --border: #fbcfe8;        /* Pink 200 */
+            --shadow: 0 10px 25px -5px rgba(236, 72, 153, 0.15),
+                      0 8px 10px -6px rgba(236, 72, 153, 0.1);
+        }
+
+        /* --- ESTILOS VISUAIS --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Quicksand', system-ui, -apple-system, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            padding: 16px;
+            padding-bottom: 50px;
+            position: relative;
+        }
+
+        /* ALERTA DE ESTADO / OFFLINE */
+        #localModeAlert {
+            background: #d97706;
+            color: white;
+            text-align: center;
+            font-size: 12px;
+            padding: 8px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: none;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 18px;
+            padding: 16px 18px;
+            box-shadow: var(--shadow);
+            border: 1px solid white;
+            margin-bottom: 12px;
+        }
+
+        /* Cabeçalho principal em gradiente rosa (tipo relatórios) */
+        .card.app-header {
+            background: linear-gradient(135deg, #ec4899, #db2777);
+            color: #ffffff;
+            border: 1px solid rgba(255,255,255,0.7);
+            box-shadow: 0 10px 30px rgba(219, 39, 119, 0.45);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .title {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            color: rgba(255,255,255,0.85);
+            margin-top: 2px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .status-badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.75);
+            color: #e5e7eb;
+            font-weight: 700;
+            border: 1px solid transparent;
+        }
+        .status-badge.online {
+            background: #ecfdf5;
+            color: #16a34a;
+            border-color: #4ade80;
+        }
+        .status-badge.offline {
+            background: #fef2f2;
+            color: #b91c1c;
+            border-color: #fecaca;
+        }
+
+        .role-toggle {
+            font-size: 11px;
+            background: rgba(255,255,255,0.18);
+            border-radius: 999px;
+            padding: 4px;
+            display: inline-flex;
+            gap: 4px;
+            border: 1px solid rgba(248, 187, 208, 0.9);
+            backdrop-filter: blur(6px);
+        }
+        .role-btn {
+            border: none;
+            border-radius: 999px;
+            padding: 3px 8px;
+            font-size: 11px;
+            cursor: pointer;
+            background: transparent;
+            color: #fee2e2;
+        }
+        .role-btn.active {
+            background: #ffffff;
+            color: var(--primary-dark);
+            font-weight: 600;
+        }
+
+        .screen {
+            display: none;
+            margin-top: 10px;
+            animation: fadeIn 0.3s ease;
+        }
+        .screen.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn-tile {
+            background: linear-gradient(to bottom right, #ffffff, #ffe4f1);
+            border-radius: 16px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 90px;
+            cursor: pointer;
+            transition: transform 0.08s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+            box-shadow: 0 2px 8px rgba(236, 72, 153, 0.12);
+        }
+        .btn-tile:active {
+            transform: scale(0.98);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+            border-color: var(--accent);
+        }
+        .btn-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--text-main);
+        }
+        .btn-desc {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+        .lock-badge {
+            margin-top: 6px;
+            font-size: 10px;
+            color: var(--primary-dark);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--primary-light);
+            border-radius: 999px;
+            padding: 2px 8px;
+            border: 1px solid var(--border);
+        }
+
+        .back-btn {
+            margin-top: 12px;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            border: 1px solid var(--border);
+        }
+
+        /* CANETA */
+        #canetaApp header {
+            background: linear-gradient(135deg, #ec4899, #db2777);
+            color: #fffdfd;
+            padding: 12px 16px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 6px 18px rgba(236,72,153,0.35);
+        }
+        #canetaApp h1 {
+            font-size: 18px;
+            margin: 0;
+        }
+        #canetaApp .card-calc {
+            background: #fff7fb;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 10px;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+        #canetaApp label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 14px;
+            color: var(--primary-dark);
+            font-weight: 600;
+        }
+        #canetaApp input,
+        #canetaApp textarea {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 16px;
+            margin-bottom: 10px;
+            background: #ffffff;
+            color: var(--text-main);
+        }
+        #canetaApp .linha {
+            display: flex;
+            gap: 10px;
+        }
+        #canetaApp .linha > div { flex: 1; }
+
+        .btn-calc {
+            background: linear-gradient(135deg, #ec4899, #db2777);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 99px;
+            width: 100%;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            box-shadow: 0 4px 14px rgba(236,72,153,0.5);
+        }
+
+        .resultado {
+            margin-top: 14px;
+            padding: 10px;
+            border-radius: 8px;
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            border: 1px solid var(--border);
+            font-size: 15px;
+        }
+
+        /* Tabela Plano */
+        table.plano-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+        table.plano-table th {
+            background: #ffe4e6;
+            padding: 6px;
+            border: 1px solid #fecdd3;
+            font-weight: 600;
+            color: #881337;
+        }
+        table.plano-table td {
+            padding: 4px;
+            border: 1px solid #fecdd3;
+            text-align: center;
+        }
+        table.plano-table input {
+            margin: 0;
+            padding: 4px;
+            font-size: 12px;
+        }
+
+        .btn-secundario {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 99px;
+            background: #ffffff;
+            color: var(--primary-dark);
+            border: 1px solid var(--border);
+            cursor: pointer;
+        }
+
+        /* ALIMENTAÇÃO */
+        .r3-card {
+            background: #ffffff;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        .r3-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+        .r3-input {
+            width: 100%;
+            font-size: 26px;
+            padding: 4px;
+            text-align: center;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: var(--primary);
+            font-weight: 700;
+        }
+        .r3-result {
+            background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+            border-radius: 18px;
+            padding: 14px;
+            margin-top: 14px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(236,72,153,0.4);
+        }
+        .r3-result-number {
+            font-size: 48px;
+            font-weight: 800;
+            line-height: 1.1;
+            color: #ffffff;
+        }
+        .r3-reset {
+            margin-top: 16px;
+            background: transparent;
+            border: 2px solid var(--accent);
+            padding: 8px 18px;
+            border-radius: 999px;
+            color: var(--primary-dark);
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            background: rgba(255,255,255,0.7);
+        }
+
+        /* MEDICINA */
+        .med-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .med-card {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 8px;
+        }
+        .med-img-box {
+            width: 100%;
+            height: 120px;
+            background: #fff1f2;
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: pointer;
+            position: relative;
+        }
+        .med-img-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .med-placeholder {
+            font-size: 10px;
+            color: var(--text-sub);
+            text-align: center;
+            padding: 4px;
+        }
+        .med-btn-row {
+            display: flex;
+            gap: 5px;
+            margin-top: 6px;
+        }
+        .med-btn {
+            flex: 1;
+            font-size: 11px;
+            padding: 4px;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+        }
+        .btn-view { background: #059669; }
+        .btn-clear { background: #db2777; }
+        .med-loading {
+            position: absolute;
+            inset:0;
+            background:rgba(0,0,0,0.8);
+            color:white;
+            display:none;
+            flex-direction:column;
+            align-items:center;
+            justify-content:center;
+            font-size:11px;
+            z-index:10;
+            border-radius:8px;
+        }
+
+        /* DESPENSA */
+        .card-despensa {
+            background: #ffffff;
+            color: var(--text-main);
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border: 1px solid #e5e7eb;
+        }
+        .card-despensa.low {
+            border: 2px solid #ef4444;
+            background: #fef2f2;
+        }
+        .row-stock {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 4px;
+            font-size: 13px;
+        }
+        .counter-grp {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f3f4f6;
+            padding: 2px 8px;
+            border-radius: 99px;
+        }
+        .counter-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: none;
+            background: white;
+            font-weight: bold;
+            color: var(--primary-dark);
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .btn-trash {
+            background: #fee2e2;
+            color: #991b1b;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 10px;
+            margin-top: 6px;
+            width: 100%;
+            cursor: pointer;
+        }
+
+        /* TOAST */
+        #syncToast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #059669;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 9999;
+        }
+
+        /* DEFINIÇÕES */
+        .pin-wrapper {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .pin-wrapper input {
+            flex: 1;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: #fff1f2;
+            color: var(--text-main);
+        }
+        .pin-wrapper button {
+            padding: 8px 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--text-main);
+        }
+        .toggle-row input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+        }
+
+        /* MODAL GERAL (Para Resumo e Imagens) */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.75);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 16px;
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            text-align: left;
+            box-shadow: var(--shadow);
+        }
+
+        /* ESTILOS DE ZOOM */
+        #imgScrollContainer {
+            width: 100%;
+            height: 70vh;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            background: #000;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        .full-img {
+            max-width: 100%;
+            object-fit: contain;
+            transition: width 0.2s ease;
+        }
+        .zoom-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 15px;
+            background: rgba(0,0,0,0.5);
+            padding: 8px;
+            border-radius: 99px;
+            border: 1px solid #fb7185;
+        }
+        .btn-zoom {
+            background: #db2777;
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .btn-zoom:active { transform: scale(0.9); }
+
+        .close-modal {
+            margin-top: 15px;
+            background: var(--primary-dark);
+            color: white;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 99px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .summary-line {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+            font-size: 14px;
+            text-align: left;
+        }
+        .summary-line:last-child { border-bottom: none; }
+        .summary-vals {
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin-bottom: 8px;
+        }
+        .section-text {
+            font-size: 13px;
+            color: var(--text-sub);
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="syncToast">☁️ Sincronizado!</div>
+
+<!-- MODAL UNIVERSAL -->
+<div id="universalModal" class="modal-overlay">
+    <!-- Conteúdo Genérico (Resumos) -->
+    <div id="modalContentBox" class="modal-content" style="display:none;">
+        <h3 id="modalTitle" style="margin-bottom:15px; color:var(--primary-dark); text-align:center;"></h3>
+        <div id="modalBody"></div>
+        <button class="close-modal" onclick="closeModal()">Fechar</button>
+    </div>
+    
+    <!-- Visualizador de Imagem com Zoom -->
+    <div id="modalImageBox" style="display:none; text-align:center; width:100%; max-width: 600px;">
+        <!-- Controlos de Zoom -->
+        <div class="zoom-controls">
+            <button class="btn-zoom" onclick="zoomOut()">-</button>
+            <span style="display:flex;align-items:center;color:white;font-size:12px">ZOOM</span>
+            <button class="btn-zoom" onclick="zoomIn()">+</button>
+        </div>
+        
+        <!-- Área de Scroll -->
+        <div id="imgScrollContainer">
+            <img id="modalFullImg" class="full-img">
+        </div>
+        
+        <button class="close-modal" onclick="closeModal()">Fechar</button>
+    </div>
+</div>
+
+<div class="app-container">
+    
+    <!-- ALERTA DE ESTADO -->
+    <div id="localModeAlert">
+        📱 Sem internet. A app pode mostrar dados em cache.
+    </div>
+
+    <!-- Cabeçalho com gradiente rosa -->
+    <div class="card app-header">
+        <div class="header">
+            <div>
+                <div class="title">App Leonor 💗</div>
+                <div class="subtitle">
+                    <span id="connBadge" class="status-badge">A ligar...</span>
+                </div>
+            </div>
+            <div class="role-toggle">
+                <button class="role-btn active" id="btnLeonor" onclick="setRole('leonor')">Sou a Leonor</button>
+                <button class="role-btn" id="btnAdulto" onclick="setRole('adulto')">Sou Pai/Mãe</button>
+            </div>
+        </div>
+
+        <!-- MENU PRINCIPAL -->
+        <div class="screen active" id="homeScreen">
+            <div class="grid">
+                <div class="btn-tile" data-app="caneta" onclick="openScreen('canetaScreen')">
+                    <div>
+                        <div class="btn-title">Caneta 💉</div>
+                        <div class="btn-desc">Calculadora & Plano</div>
+                    </div>
+                </div>
+
+                <div class="btn-tile" data-app="alimentacao" onclick="openScreen('alimentacaoScreen')">
+                    <div>
+                        <div class="btn-title">Alimentação 🍽️</div>
+                        <div class="btn-desc">Regra de 3 simples</div>
+                    </div>
+                </div>
+
+                <div class="btn-tile" data-app="despensa" onclick="openLockedArea('despensaScreen')">
+                    <div>
+                        <div class="btn-title">Despensa 🧃</div>
+                        <div class="btn-desc">Stock em tempo real</div>
+                    </div>
+                    <div class="lock-badge">🔒 Família</div>
+                </div>
+
+                <div class="btn-tile" data-app="medicina" onclick="openScreen('medicinaScreen')">
+                    <div>
+                        <div class="btn-title">Medicina 🧬</div>
+                        <div class="btn-desc">Imagens</div>
+                    </div>
+                </div>
+
+                <div class="btn-tile" data-app="jogo" onclick="openScreen('jogoScreen')">
+                    <div>
+                        <div class="btn-title">Jogo 🎮</div>
+                        <div class="btn-desc">Quiz da Nôno</div>
+                    </div>
+                </div>
+
+                <!-- RELATÓRIOS BLOQUEADOS POR PIN -->
+                <div class="btn-tile" data-app="relatorios" onclick="openLockedArea('relatoriosScreen')">
+                    <div>
+                        <div class="btn-title">Relatórios 📈</div>
+                        <div class="btn-desc">CGM + Bólus + Alarmes</div>
+                    </div>
+                    <div class="lock-badge">🔒 Família</div>
+                </div>
+
+                <!-- Botão Resumo Global -->
+                <div class="btn-tile" data-app="resumo" onclick="showGlobalSummary()">
+                    <div>
+                        <div class="btn-title">Resumo 📋</div>
+                        <div class="btn-desc">Relatório + Despensa</div>
+                    </div>
+                </div>
+
+                <div class="btn-tile" data-app="definicoes" onclick="openLockedArea('definicoesScreen')">
+                    <div>
+                        <div class="btn-title">Definições ⚙️</div>
+                        <div class="btn-desc">PIN & Apps</div>
+                    </div>
+                    <div class="lock-badge">🔒 Pais</div>
+                </div>
+            </div>
+            <div style="text-align:center; font-size:10px; color:rgba(255,255,255,0.9); margin-top:20px;">
+                Versão Família Pro V10 • Layout Rosa
+            </div>
+        </div>
+
+        <!-- CALCULADORA -->
+        <div class="screen" id="canetaScreen">
+            <button class="back-btn" onclick="goHome()">← Voltar</button>
+            
+            <div id="canetaApp">
+                <header>
+                    <h1>Calculadora 🦄</h1>
+                    <button class="btn-secundario" onclick="togglePlano()">Ver Plano</button>
+                </header>
+
+                <div class="card-calc" id="calcArea">
+                    <h2 style="font-size:16px; margin-top:0; color:#831843;">Dados da Refeição</h2>
+                    <div class="linha">
+                        <div><label>Hora</label><input type="time" id="calcTime"></div>
+                        <div style="display:flex; align-items:flex-end; padding-bottom:10px;"><button class="btn-secundario" onclick="setCurrentTime()">Agora</button></div>
+                    </div>
+                    <div class="linha">
+                        <div><label>Glicemia</label><input type="number" id="calcBg" placeholder="mg/dL"></div>
+                        <div><label>Hidratos</label><input type="number" id="calcCarbs" placeholder="g"></div>
+                    </div>
+                    <label>Insulina a Bordo (IOB)</label><input type="number" id="calcIob" placeholder="0.0" step="0.1">
+                    <label style="display:flex; align-items:center; gap:8px; margin:10px 0;">
+                        <input type="checkbox" id="calcCorrection" checked style="width:auto; margin:0;">
+                        Incluir correção (FSI/Alvo)
+                    </label>
+                    <div style="background:#fce7f3; padding:8px; border-radius:8px; margin-bottom:10px;">
+                        <label style="font-size:12px; margin-bottom:4px;">Modo de Cálculo:</label>
+                        <div style="display:flex; gap:15px;">
+                            <label style="font-weight:400; font-size:13px; display:flex; align-items:center; gap:4px;">
+                                <input type="radio" name="calcMode" value="plano" checked style="width:auto; margin:0;"> Usar Plano (Auto)
+                            </label>
+                            <label style="font-weight:400; font-size:13px; display:flex; align-items:center; gap:4px;">
+                                <input type="radio" name="calcMode" value="simples" style="width:auto; margin:0;"> Simples (Manual)
+                            </label>
+                        </div>
+                        <div id="manualFields" style="display:none; margin-top:8px; border-top:1px solid #f9a8d4; padding-top:8px;">
+                            <div class="linha">
+                                <input type="number" id="manualRatio" placeholder="Rácio">
+                                <input type="number" id="manualFsi" placeholder="FSI">
+                            </div>
+                            <input type="number" id="manualTarget" placeholder="Alvo">
+                        </div>
+                    </div>
+                    <button class="btn-calc" onclick="calculateInsulin()">CALCULAR DOSE</button>
+                    <div id="calcResult" class="resultado" style="display:none;"></div>
+                </div>
+
+                <div class="card-calc" id="planoArea" style="display:none; border:2px solid #db2777;">
+                    <h2 style="font-size:16px; margin-top:0; color:#831843;">Plano de Tratamento (Cloud) ☁️</h2>
+                    <table class="plano-table">
+                        <thead>
+                            <tr>
+                                <th>Início</th>
+                                <th>Fim</th>
+                                <th>I:H</th>
+                                <th>FSI</th>
+                                <th>Alvo</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="planoBody"></tbody>
+                    </table>
+                    <button class="btn-secundario" onclick="addPlanoRow()">+ Faixa</button>
+                    <label style="margin-top:10px;">Notas Médicas</label>
+                    <textarea id="planoNotes" rows="3"></textarea>
+                    <button class="btn-calc" style="background:#831843; margin-top:10px;" onclick="savePlanoToCloud()">GUARDAR</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ALIMENTAÇÃO -->
+        <div class="screen" id="alimentacaoScreen">
+            <button class="back-btn" onclick="goHome()">← Voltar</button>
+            <h2 class="section-title">Regra de 3 Simples 🍽️</h2>
+            <div class="r3-card">
+                <span class="r3-label">🏷️ Rótulo (por 100g)</span>
+                <input type="number" id="r3_hc" class="r3-input" placeholder="0" oninput="calcR3()">
+            </div>
+            <div class="r3-card">
+                <span class="r3-label">⚖️ Peso no prato (g)</span>
+                <input type="number" id="r3_peso" class="r3-input" placeholder="0" oninput="calcR3()">
+            </div>
+            <div class="r3-result">
+                <span class="r3-label" style="color:white; opacity:0.9;">Total Hidratos</span>
+                <div class="r3-result-number">
+                    <span id="r3_res">0</span>
+                    <span style="font-size:18px;">g</span>
+                </div>
+            </div>
+            <button class="r3-reset" onclick="resetR3()">Limpar ✨</button>
+        </div>
+
+        <!-- DESPENSA -->
+        <div class="screen" id="despensaScreen">
+            <button class="back-btn" onclick="goHome()">← Voltar</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h2 class="section-title" style="margin:0">Despensa 🧃</h2>
+                <button class="btn-secundario" onclick="showStockSummary()">📄 Resumo</button>
+            </div>
+            
+            <div id="despensaList">
+                <div style="text-align:center; padding:20px; color:var(--text-sub);">
+                    A carregar dados...
+                </div>
+            </div>
+            <div class="card" style="margin-top:10px;">
+                <h3 style="font-size:14px; margin-bottom:8px;">Novo Item</h3>
+                <div class="pin-wrapper">
+                    <input type="text" id="newItemName" placeholder="Ex: Lancetas">
+                    <button onclick="addInventoryItem()">+</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MEDICINA -->
+        <div class="screen" id="medicinaScreen">
+            <button class="back-btn" onclick="goHome()">← Voltar</button>
+            <h2 class="section-title">Medicina 🧬</h2>
+            <p class="section-text">Podes carregar fotos grandes. A app ajusta automaticamente.</p>
+            <div class="med-grid">
+                <div class="med-card">
+                    <div class="med-img-box" onclick="triggerFile(1)">
+                        <img id="medImg1" style="display:none;">
+                        <div id="medTxt1" class="med-placeholder">Toque para adicionar</div>
+                        <div id="medLoad1" class="med-loading">
+                            <span>A comprimir...</span>
+                            <span style="font-size:9px">(Pode demorar um pouco)</span>
+                        </div>
+                    </div>
+                    <div class="med-btn-row">
+                        <button class="med-btn btn-view" onclick="showFullImage(1)">Ver 🔍</button>
+                        <button class="med-btn btn-clear" onclick="clearMedicinaCloud(1)">Limpar</button>
+                    </div>
+                    <input type="file" id="file1" style="display:none;" accept="image/*" onchange="handleFile(1, this)">
+                </div>
+                <div class="med-card">
+                    <div class="med-img-box" onclick="triggerFile(2)">
+                        <img id="medImg2" style="display:none;">
+                        <div id="medTxt2" class="med-placeholder">Toque para adicionar</div>
+                        <div id="medLoad2" class="med-loading">
+                            <span>A comprimir...</span>
+                            <span style="font-size:9px">(Pode demorar um pouco)</span>
+                        </div>
+                    </div>
+                    <div class="med-btn-row">
+                        <button class="med-btn btn-view" onclick="showFullImage(2)">Ver 🔍</button>
+                        <button class="med-btn btn-clear" onclick="clearMedicinaCloud(2)">Limpar</button>
+                    </div>
+                    <input type="file" id="file2" style="display:none;" accept="image/*" onchange="handleFile(2, this)">
+                </div>
+            </div>
+        </div>
+
+        <!-- RELATÓRIOS -->
+        <div class="screen" id="relatoriosScreen">
+            <button class="back-btn" onclick="goHome()">← Voltar</button>
+
+            <h2 class="section-title">Relatórios – Análise Diabetes</h2>
+            
+            <iframe 
+                src="relatorios_V.2.html" 
+                style="width:100%; height:85vh; border:none; border-radius:12px; margin-top:10px; background:#000;">
+            </iframe>
+        </div>
+
+        <!-- DEFINIÇÕES -->
+        <div class="screen" id="definicoesScreen">
+            <button class="back-btn" onclick="goHome()">← Voltar</button>
+            <h2 class="section-title">Definições da Família ⚙️</h2>
+            <div class="card">
+                <h3 style="font-size:14px;">PIN da Família</h3>
+                <div class="pin-wrapper">
+                    <input type="number" id="newGlobalPin" placeholder="Novo PIN (4 dígitos)">
+                    <button onclick="updateGlobalPin()">Mudar PIN</button>
+                </div>
+            </div>
+            <div class="card" style="margin-top:10px;">
+                <h3 style="font-size:14px; margin-bottom:8px;">Visibilidade (Menu Leonor)</h3>
+                <div id="visibilityList"></div>
+            </div>
+        </div>
+
+        <!-- JOGO -->
+        <div class="screen" id="jogoScreen">
+            <button class="back-btn" onclick="goHome()">← Voltar</button>
+            <h2 class="section-title">Quiz Diabetes 🎮</h2>
+            <div id="quizContainer" class="quiz-container">
+                <div style="text-align:center;">
+                    <div style="font-size:40px;">🦄</div>
+                    <button class="btn-calc" style="margin-top:15px;" onclick="startQuiz()">COMEÇAR</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    /* 1. CONFIGURAÇÃO FIREBASE */
+    const myFirebaseConfig = {
+      apiKey: "AIzaSyB-JyydZwX1zTfB5i0AV0fMI-3ayqEjCD0",
+      authDomain: "app-nono.firebaseapp.com",
+      projectId: "app-nono",
+      storageBucket: "app-nono.firebasestorage.app",
+      messagingSenderId: "960955367814",
+      appId: "1:960955367814:web:05ac468556a9d1e76dac07",
+      measurementId: "G-DDSD0BHJ0X"
+    };
+
+    let firebaseConfig, appId;
+    if (typeof __firebase_config !== 'undefined') {
+        firebaseConfig = JSON.parse(__firebase_config);
+        appId = __app_id || 'default';
+    } else {
+        firebaseConfig = myFirebaseConfig;
+        appId = 'fam-machado-brites';
+    }
+
+    let db, auth, currentUser;
+    let globalData = {
+        pin: "1234",
+        visibility: { caneta: true, despensa: true, medicina: true, jogo: true }
+    };
+    let inventoryData = [];
+    let healthPlan = { rows: [], notes: "" };
+    let medicinaData = { img1: null, img2: null };
+    let currentRole = 'leonor';
+    
+    // Último relatório de saúde carregado da Firebase
+    let lastHealthReport = null;
+
+    // Flag de desbloqueio da área Medicina (depois do PIN)
+    let medicinaUnlocked = false;
+
+    function getRootRef() {
+        return db.collection('artifacts').doc(appId).collection('public').doc('data');
+    }
+
+    function markFirebaseError(label) {
+        const badge = document.getElementById('connBadge');
+        if (!badge) return;
+        badge.innerText = label || "Erro (Firebase)";
+        badge.className = "status-badge offline";
+    }
+
+    try {
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        auth = firebase.auth();
+        db.enablePersistence({synchronizeTabs:true}).catch(err => {
+            console.log("Persistência offline desativada:", err);
+        });
+    } catch(e) {
+        console.error("Erro Firebase:", e);
+        markFirebaseError("Erro Firebase");
+    }
+
+    /* 2. INICIALIZAÇÃO AUTH */
+    function initAuth() {
+        if (!auth) return;
+        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+            .then(() => auth.signInAnonymously())
+            .catch((error) => {
+                console.log("Falha persistência local, a tentar sessão...", error);
+                return auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
+                    .then(() => auth.signInAnonymously());
+            })
+            .catch((error) => {
+                console.error("Erro Auth:", error);
+                markFirebaseError("Erro Auth");
+            });
+    }
+
+    auth.onAuthStateChanged((user) => {
+        currentUser = user || null;
+        updateNetworkStatus();
+        if (user && db) {
+            startListeners();
+        } else if (!user) {
+            initAuth();
+        }
+    });
+
+    window.addEventListener('online', updateNetworkStatus);
+    window.addEventListener('offline', updateNetworkStatus);
+
+    function updateNetworkStatus() {
+        const badge = document.getElementById('connBadge');
+        const alertEl = document.getElementById('localModeAlert');
+        if (!badge || !alertEl) return;
+
+        const isOnline = navigator.onLine;
+        if (isOnline) {
+            alertEl.style.display = "none";
+            if (currentUser) {
+                badge.innerText = "Ligado";
+                badge.className = "status-badge online";
+            } else {
+                badge.innerText = "A ligar...";
+                badge.className = "status-badge";
+            }
+        } else {
+            badge.innerText = "Offline";
+            badge.className = "status-badge offline";
+            alertEl.textContent = "📱 Sem internet. A app pode mostrar dados em cache. As alterações serão sincronizadas quando voltar a ligação.";
+            alertEl.style.display = "block";
+        }
+    }
+
+    /* 3. LISTENERS FIRESTORE */
+    function startListeners() {
+        if (!db) return;
+        const rootRef = getRootRef();
+
+        // Definições (PIN + visibilidade)
+        rootRef.collection('settings').doc('global').onSnapshot(doc => {
+            if (doc.exists) {
+                const data = doc.data() || {};
+                globalData = {
+                    pin: data.pin || globalData.pin || "1234",
+                    visibility: Object.assign({}, globalData.visibility, data.visibility || {})
+                };
+            } else {
+                // criar documento inicial
+                doc.ref.set(globalData).catch(e => console.error("Erro a criar settings:", e));
+            }
+            renderVisibility();
+            applyVisibility();
+        }, err => {
+            console.error("Erro Snapshot Settings:", err);
+            markFirebaseError("Erro Settings");
+        });
+
+        // Inventário / Despensa
+        rootRef.collection('inventory').doc('main').onSnapshot(doc => {
+            if (doc.exists) {
+                const data = doc.data() || {};
+                inventoryData = data.items || [];
+            } else {
+                inventoryData = [];
+                doc.ref.set({ items: [] }).catch(e => console.error("Erro a criar inventário:", e));
+            }
+            renderInventory();
+        }, err => {
+            console.error("Erro Snapshot Inventory:", err);
+            markFirebaseError("Erro Inventory");
+        });
+
+        // Plano de saúde
+        rootRef.collection('health').doc('plano').onSnapshot(doc => {
+            if (doc.exists) {
+                const data = doc.data() || {};
+                healthPlan = {
+                    rows: Array.isArray(data.rows) ? data.rows : [],
+                    notes: data.notes || ""
+                };
+            } else {
+                doc.ref.set(healthPlan).catch(e => console.error("Erro a criar plano:", e));
+            }
+            renderPlanTable();
+        }, err => {
+            console.error("Erro Snapshot Plano:", err);
+            markFirebaseError("Erro Plano");
+        });
+
+        // Medicina (imagens)
+        rootRef.collection('health').doc('medicina').onSnapshot(doc => {
+            if (doc.exists) {
+                medicinaData = doc.data() || { img1: null, img2: null };
+            } else {
+                doc.ref.set(medicinaData).catch(e => console.error("Erro a criar medicina:", e));
+            }
+            renderMedicinaCloud();
+        }, err => {
+            console.error("Erro Snapshot Medicina:", err);
+            markFirebaseError("Erro Medicina");
+        });
+
+        // Último relatório guardado
+        rootRef.collection('health_reports')
+            .orderBy('createdAt','desc')
+            .limit(1)
+            .onSnapshot(snap => {
+                if (!snap.empty) {
+                    lastHealthReport = snap.docs[0].data();
+                } else {
+                    lastHealthReport = null;
+                }
+            }, err => {
+                console.error("Erro Snapshot health_reports:", err);
+                lastHealthReport = null;
+            });
+    }
+
+    /* 4. TOAST */
+    function showToast(msg) {
+        const t = document.getElementById('syncToast');
+        if (!t) return;
+        t.innerText = msg || "☁️ Sincronizado!";
+        t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', 2000);
+    }
+
+    /* 5. PIN & ÁREAS PROTEGIDAS */
+    function verifyPin(customMsg) {
+        const currentPin = globalData.pin || "1234";
+        const input = prompt(customMsg || "Área Protegida. Introduza o PIN de Família:");
+        if (input === currentPin) return true;
+        if (input !== null) alert("PIN Incorreto ❌");
+        return false;
+    }
+
+    function openLockedArea(screenId) {
+        if (!currentUser) {
+            initAuth();
+            alert("A ligar à Firebase... tenta novamente em alguns segundos.");
+            return;
+        }
+        if (verifyPin()) openScreen(screenId);
+    }
+
+    function updateGlobalPin() {
+        const newPin = document.getElementById('newGlobalPin').value;
+        if (!newPin || newPin.length < 4) {
+            alert("Mínimo 4 dígitos.");
+            return;
+        }
+        globalData.pin = newPin;
+        getRootRef().collection('settings').doc('global')
+            .update({ pin: newPin })
+            .then(() => {
+                alert("PIN Alterado! ✅");
+                document.getElementById('newGlobalPin').value = "";
+            })
+            .catch(err => {
+                console.error("Erro ao guardar PIN:", err);
+                alert("Erro ao guardar o PIN na cloud. Verifica a ligação ou as permissões.");
+            });
+    }
+
+    function toggleApp(k, v) { 
+        globalData.visibility[k] = v;
+        let u = {};
+        u[`visibility.${k}`] = v; 
+        getRootRef().collection('settings').doc('global')
+            .update(u)
+            .then(() => showToast())
+            .catch(err => {
+                console.error("Erro ao atualizar visibilidade:", err);
+                alert("Erro ao atualizar visibilidade na cloud.");
+            });
+    }
+
+    /* 6. INVENTÁRIO / DESPENSA */
+    function saveInventory() { 
+        getRootRef().collection('inventory').doc('main')
+            .set({ items: inventoryData })
+            .then(() => showToast())
+            .catch(err => {
+                console.error("Erro ao guardar inventário:", err);
+                alert("Erro ao guardar na cloud.");
+            }); 
+    }
+
+    function renderInventory() {
+        const list = document.getElementById('despensaList'); 
+        if (!list) return;
+        list.innerHTML = "";
+        if (!inventoryData || inventoryData.length === 0) {
+            list.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-sub);">Sem items. Adiciona um novo em baixo.</div>`;
+            return;
+        }
+        inventoryData.forEach((item, idx) => {
+            const isLowHome = item.home < 2;
+            const isLowRx = item.rx < 2;
+            const isLow = (isLowHome || isLowRx);
+
+            const div = document.createElement('div'); 
+            div.className = `card-despensa ${isLow?'low':''}`;
+            
+            const alertHome = isLowHome ? '<span style="color:#ef4444; margin-left:4px;">⚠️</span>' : '';
+            const alertRx = isLowRx ? '<span style="color:#ef4444; margin-left:4px;">⚠️</span>' : '';
+            const headerAlert = isLow ? '<span style="font-size:10px; background:#fee2e2; color:#b91c1c; padding:2px 6px; border-radius:4px;">REPOR</span>' : '';
+
+            div.innerHTML = `
+                <div style="display:flex;justify-content:space-between;font-weight:bold; align-items:center;">
+                    <span>${item.name}</span>
+                    ${headerAlert}
+                </div>
+                <div class="row-stock">
+                    <span>🏠 Casa</span>
+                    <div class="counter-grp" style="${isLowHome ? 'border:1px solid #ef4444; background:#fee2e2;' : ''}">
+                        <button class="counter-btn" onclick="invChange(${idx},'home',-1)">-</button>
+                        <span style="${isLowHome ? 'color:#b91c1c; font-weight:bold;' : ''}">${item.home}${alertHome}</span>
+                        <button class="counter-btn" onclick="invChange(${idx},'home',1)">+</button>
+                    </div>
+                </div>
+                <div class="row-stock">
+                    <span>💊 Farmácia</span>
+                    <div class="counter-grp" style="${isLowRx ? 'border:1px solid #ef4444; background:#fee2e2;' : ''}">
+                        <button class="counter-btn" onclick="invChange(${idx},'rx',-1)">-</button>
+                        <span style="${isLowRx ? 'color:#b91c1c; font-weight:bold;' : ''}">${item.rx}${alertRx}</span>
+                        <button class="counter-btn" onclick="invChange(${idx},'rx',1)">+</button>
+                    </div>
+                </div>
+                <button class="btn-trash" onclick="invDel(${idx})">Apagar</button>`;
+            list.appendChild(div);
+        });
+    }
+    function invChange(idx,f,d) { inventoryData[idx][f]=Math.max(0, inventoryData[idx][f]+d); saveInventory(); }
+    function invDel(idx) { if(confirm("Apagar?")) { inventoryData.splice(idx,1); saveInventory(); } }
+    function addInventoryItem() { 
+        const n = document.getElementById('newItemName').value; 
+        if(n){ 
+            inventoryData.push({name:n,home:0,rx:0}); 
+            saveInventory(); 
+            document.getElementById('newItemName').value=""; 
+        } 
+    }
+
+    // Construção do resumo de stock (reutilizável)
+    function buildStockSummaryHtml() {
+        if(!inventoryData || inventoryData.length === 0) {
+            return `<p style="font-size:13px;text-align:left;">Despensa vazia. Adiciona items na área <strong>Despensa</strong>.</p>`;
+        }
+
+        let html = "";
+        inventoryData.forEach(item => {
+            const isLowHome = item.home < 2;
+            const isLowRx = item.rx < 2;
+            const style = (isLowHome || isLowRx) ? "color:#b91c1c; font-weight:bold;" : "";
+            const icon = (isLowHome || isLowRx) ? "⚠️" : "";
+
+            html += `
+            <div class="summary-line" style="${style}">
+                <span>${item.name} ${icon}</span>
+                <span class="summary-vals">
+                    🏠${item.home}${isLowHome ? ' (BAIXO)' : ''} | 
+                    💊${item.rx}${isLowRx ? ' (BAIXO)' : ''}
+                </span>
+            </div>`;
+        });
+        return html;
+    }
+
+    function showStockSummary() {
+        if(!inventoryData || inventoryData.length === 0) { 
+            alert("Despensa vazia."); 
+            return; 
+        }
+        const html = buildStockSummaryHtml();
+        document.getElementById('modalTitle').innerText = "Resumo Despensa 📋";
+        document.getElementById('modalBody').innerHTML = html;
+        document.getElementById('modalImageBox').style.display = 'none';
+        document.getElementById('modalContentBox').style.display = 'block';
+        document.getElementById('universalModal').style.display = 'flex';
+    }
+
+    // Resumo Global (Relatório + Despensa)
+    function showGlobalSummary() {
+        const modalTitleEl = document.getElementById('modalTitle');
+        const modalBodyEl = document.getElementById('modalBody');
+
+        let html = "";
+
+        // Secção Relatório
+        html += `<h4 style="margin-bottom:8px;color:#be185d;text-align:left;">Relatório Diabetes</h4>`;
+        if(lastHealthReport && (lastHealthReport.reportHtml || lastHealthReport.periodFrom || lastHealthReport.tir != null)) {
+            const fmtDate = iso => iso ? iso.slice(0,10).split('-').reverse().join('-') : '–';
+            const from = fmtDate(lastHealthReport.periodFrom);
+            const to   = fmtDate(lastHealthReport.periodTo);
+            const tirVal = (typeof lastHealthReport.tir === 'number')
+                ? lastHealthReport.tir.toFixed(0) + '%'
+                : (lastHealthReport.tir != null ? lastHealthReport.tir + '%' : '–');
+
+            html += `
+                <div style="font-size:12px;text-align:left;margin-bottom:8px;">
+                    <div><strong>Período:</strong> ${from} a ${to}</div>
+                    <div><strong>TIR:</strong> ${tirVal}</div>
+                </div>
+            `;
+            if(lastHealthReport.reportHtml) {
+                html += `<div style="font-size:12px;text-align:left;">${lastHealthReport.reportHtml}</div>`;
+            } else {
+                html += `<p style="font-size:13px;text-align:left;">Este relatório não tem texto guardado. Abre a área <strong>Relatórios</strong> e gera um novo relatório para ver o detalhe aqui.</p>`;
+            }
+        } else {
+            html += `<p style="font-size:13px;text-align:left;">Ainda não há nenhum relatório guardado. Na área <strong>Relatórios</strong>, carrega o ZIP, gera o relatório e guarda-o para aparecer aqui.</p>`;
+        }
+
+        html += `<hr style="border-color:rgba(148,163,184,0.4); margin:12px 0;">`;
+
+        // Secção Despensa
+        html += `<h4 style="margin-bottom:8px;color:#be185d;text-align:left;">Resumo Despensa</h4>`;
+        html += buildStockSummaryHtml();
+
+        modalTitleEl.innerText = "Resumo Global 📋";
+        modalBodyEl.innerHTML = html;
+        document.getElementById('modalImageBox').style.display = 'none';
+        document.getElementById('modalContentBox').style.display = 'block';
+        document.getElementById('universalModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('universalModal').style.display = 'none';
+    }
+
+    /* 7. MEDICINA - COMPRESSÃO & PIN */
+    function ensureMedicinaAuth() {
+        if (medicinaUnlocked) return true;
+        if (verifyPin("Área de Medicina protegida. Introduz o PIN da Família para alterar as imagens:")) {
+            medicinaUnlocked = true;
+            return true;
+        }
+        return false;
+    }
+
+    function triggerFile(id) { 
+        if (!ensureMedicinaAuth()) return;
+        document.getElementById('file'+id).click(); 
+    }
+
+    function handleFile(id, input) {
+        if (!ensureMedicinaAuth()) {
+            if (input) input.value = "";
+            return;
+        }
+        if(input.files && input.files[0]) {
+            const file = input.files[0];
+            document.getElementById('medLoad'+id).style.display = 'flex';
+            compressImage(file, 1000, 0.7, (compressedBase64) => {
+                if(compressedBase64.length > 950000) {
+                     compressImage(file, 800, 0.5, (retryBase64) => {
+                         if(retryBase64.length > 950000) {
+                             alert("Imagem demasiado complexa.");
+                             document.getElementById('medLoad'+id).style.display = 'none';
+                         } else { saveToCloud(id, retryBase64); }
+                     });
+                } else { saveToCloud(id, compressedBase64); }
+            });
+        }
+    }
+
+    function compressImage(file, maxWidth, quality, callback) {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = event => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const elem = document.createElement('canvas');
+                let width = img.width; let height = img.height;
+                if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
+                elem.width = width; elem.height = height;
+                const ctx = elem.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                const dataUrl = elem.toDataURL('image/jpeg', quality);
+                callback(dataUrl);
+            }
+            img.onerror = () => { 
+                alert("Erro ao ler imagem."); 
+                document.getElementById('medLoad'+id).style.display = 'none'; 
+            };
+        }
+    }
+    
+    function saveToCloud(id, base64) {
+        medicinaData['img'+id] = base64;
+        const update = {}; 
+        update['img'+id] = base64;
+        getRootRef().collection('health').doc('medicina')
+            .set(update, { merge: true })
+            .then(() => {
+                document.getElementById('medLoad'+id).style.display = 'none';
+                showToast();
+            })
+            .catch(err => { 
+                console.error("Erro a guardar medicina:", err);
+                document.getElementById('medLoad'+id).style.display = 'none';
+                alert("Erro ao guardar imagem na cloud.");
+            });
+    }
+
+    function clearMedicinaCloud(slot) {
+        if (!ensureMedicinaAuth()) return;
+        if(confirm("Apagar imagem?")) {
+            medicinaData['img'+slot] = null;
+            const update = {}; 
+            update['img'+slot] = null;
+            getRootRef().collection('health').doc('medicina')
+                .set(update, { merge: true })
+                .then(() => showToast())
+                .catch(err => {
+                    console.error("Erro a limpar medicina:", err);
+                    alert("Erro ao limpar imagem na cloud.");
+                });
+        }
+    }
+
+    function renderMedicinaCloud() {
+        for(let i=1; i<=2; i++) {
+            const data = medicinaData['img'+i];
+            const imgEl = document.getElementById('medImg'+i);
+            const txtEl = document.getElementById('medTxt'+i);
+            if(!imgEl || !txtEl) continue;
+            if(data) { 
+                imgEl.src = data; 
+                imgEl.style.display = 'block'; 
+                txtEl.style.display = 'none'; 
+            } else { 
+                imgEl.style.display = 'none'; 
+                txtEl.style.display = 'block'; 
+            }
+            const loadEl = document.getElementById('medLoad'+i);
+            if (loadEl) loadEl.style.display = 'none';
+        }
+    }
+
+    // Visualizador com zoom
+    let currentZoom = 1;
+    function showFullImage(id) {
+        const data = medicinaData['img'+id];
+        if(!data) { alert("Sem imagem para ver."); return; }
+        resetZoom();
+        document.getElementById('modalContentBox').style.display = 'none';
+        document.getElementById('modalImageBox').style.display = 'block';
+        document.getElementById('modalFullImg').src = data;
+        document.getElementById('universalModal').style.display = 'flex';
+    }
+    function zoomIn() {
+        currentZoom += 0.5;
+        if(currentZoom > 5) currentZoom = 5;
+        applyZoom();
+    }
+    function zoomOut() {
+        currentZoom -= 0.5;
+        if(currentZoom < 1) currentZoom = 1;
+        applyZoom();
+    }
+    function resetZoom() {
+        currentZoom = 1;
+        applyZoom();
+    }
+    function applyZoom() {
+        const img = document.getElementById('modalFullImg');
+        if(!img) return;
+        if(currentZoom > 1) {
+            img.style.maxWidth = 'none';
+            img.style.width = (currentZoom * 100) + '%';
+        } else {
+            img.style.maxWidth = '100%';
+            img.style.width = 'auto';
+        }
+    }
+
+    /* 8. CALCULADORA */
+    function setCurrentTime() { 
+        document.getElementById('calcTime').value = new Date().toTimeString().substring(0,5); 
+    }
+
+    function togglePlano() {
+        const planoArea = document.getElementById('planoArea');
+        if(planoArea.style.display === 'none' || planoArea.style.display === '') {
+            if(verifyPin("PIN de Família para editar plano:")) {
+                planoArea.style.display = 'block';
+                renderPlanTable();
+            }
+        } else { 
+            planoArea.style.display = 'none'; 
+        }
+    }
+
+    document.querySelectorAll('input[name="calcMode"]').forEach(el => {
+        el.addEventListener('change', (e) => {
+            document.getElementById('manualFields').style.display = (e.target.value === 'simples') ? 'block' : 'none';
+        });
+    });
+
+    function getPlanForTime(timeStr) {
+        if(!healthPlan.rows || healthPlan.rows.length === 0) return null;
+        const [h, m] = timeStr.split(':').map(Number);
+        const mins = h*60 + m;
+        for(let row of healthPlan.rows) {
+            const [sh, sm] = row.start.split(':').map(Number);
+            const [eh, em] = row.end.split(':').map(Number);
+            const sMins = sh*60 + sm;
+            const eMins = eh*60 + em;
+            if (sMins <= eMins) { 
+                if(mins >= sMins && mins < eMins) return row; 
+            } else { 
+                if(mins >= sMins || mins < eMins) return row; 
+            }
+        }
+        return null;
+    }
+
+    function calculateInsulin() {
+        const time = document.getElementById('calcTime').value;
+        const bg = parseFloat(document.getElementById('calcBg').value) || 0;
+        const carbs = parseFloat(document.getElementById('calcCarbs').value) || 0;
+        const iob = parseFloat(document.getElementById('calcIob').value) || 0;
+        const mode = document.querySelector('input[name="calcMode"]:checked').value;
+        
+        let ratio, fsi, target, details = "";
+        if(mode === 'plano') {
+            if(!time) { alert("Indica a hora."); return; }
+            const row = getPlanForTime(time);
+            if(!row) { alert("Sem plano para esta hora."); return; }
+            ratio = parseFloat(row.ratio); 
+            fsi = parseFloat(row.fsi); 
+            target = parseFloat(row.target);
+            details = `Plano (${row.start}-${row.end}): 1:${ratio} | FSI:${fsi} | Alvo:${target}`;
+        } else {
+            ratio = parseFloat(document.getElementById('manualRatio').value);
+            fsi = parseFloat(document.getElementById('manualFsi').value);
+            target = parseFloat(document.getElementById('manualTarget').value);
+            details = `Manual: 1:${ratio}`;
+        }
+        const foodDose = carbs / ratio;
+        let corrDose = 0;
+        if(document.getElementById('calcCorrection').checked && bg > target && fsi > 0) {
+            corrDose = (bg - target) / fsi;
+        }
+        let total = Math.max(0, foodDose + corrDose - iob);
+        const resDiv = document.getElementById('calcResult');
+        resDiv.style.display = 'block';
+        resDiv.innerHTML = `<strong>Total: ${total.toFixed(2)} U</strong><br><span style="font-size:12px">Refeição: ${foodDose.toFixed(2)} + Correção: ${corrDose.toFixed(2)} - IOB: ${iob}<br>${details}</span>`;
+    }
+
+    function renderPlanTable() {
+        const tbody = document.getElementById('planoBody');
+        if (!tbody) return;
+        tbody.innerHTML = "";
+        document.getElementById('planoNotes').value = healthPlan.notes || "";
+        (healthPlan.rows || []).forEach((row, idx) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="time" value="${row.start}" onchange="updatePlanRow(${idx},'start',this.value)"></td>
+                <td><input type="time" value="${row.end}" onchange="updatePlanRow(${idx},'end',this.value)"></td>
+                <td><input type="number" style="width:40px" value="${row.ratio}" onchange="updatePlanRow(${idx},'ratio',this.value)"></td>
+                <td><input type="number" style="width:40px" value="${row.fsi}" onchange="updatePlanRow(${idx},'fsi',this.value)"></td>
+                <td><input type="number" style="width:40px" value="${row.target}" onchange="updatePlanRow(${idx},'target',this.value)"></td>
+                <td><button onclick="deletePlanRow(${idx})" style="color:red;border:none;background:none">x</button></td>`;
+            tbody.appendChild(tr);
+        });
+    }
+    function addPlanoRow() { 
+        healthPlan.rows = healthPlan.rows || [];
+        healthPlan.rows.push({ start:"08:00", end:"13:00", ratio:10, fsi:50, target:100 }); 
+        renderPlanTable(); 
+    }
+    function updatePlanRow(idx, f, v) { 
+        if (!healthPlan.rows[idx]) return;
+        healthPlan.rows[idx][f] = v; 
+    }
+    function deletePlanRow(idx) { 
+        healthPlan.rows.splice(idx, 1); 
+        renderPlanTable(); 
+    }
+
+    function savePlanoToCloud() {
+        healthPlan.notes = document.getElementById('planoNotes').value;
+        getRootRef().collection('health').doc('plano')
+            .set(healthPlan)
+            .then(() => {
+                alert("Plano Guardado! ✅");
+                showToast();
+            })
+            .catch(err => {
+                console.error("Erro ao guardar plano:", err);
+                alert("Erro ao guardar plano na cloud.");
+            });
+    }
+
+    /* 9. ALIMENTAÇÃO */
+    function calcR3() {
+        const hc = parseFloat(document.getElementById('r3_hc').value)||0;
+        const peso = parseFloat(document.getElementById('r3_peso').value)||0;
+        const res = (hc*peso)/100;
+        document.getElementById('r3_res').innerText = Number.isInteger(res)?res:res.toFixed(1);
+    }
+    function resetR3() { 
+        document.getElementById('r3_hc').value=""; 
+        document.getElementById('r3_peso').value=""; 
+        document.getElementById('r3_res').innerText="0"; 
+    }
+
+    /* 10. VISIBILIDADE & NAVEGAÇÃO */
+    function renderVisibility() {
+        const container = document.getElementById('visibilityList');
+        if (!container) return;
+        const apps = [
+            {id:'caneta', l:'Caneta'},
+            {id:'despensa', l:'Despensa'},
+            {id:'medicina', l:'Medicina'},
+            {id:'jogo', l:'Jogo'}
+        ];
+        container.innerHTML="";
+        apps.forEach(app => {
+            const div = document.createElement('div'); 
+            div.className='toggle-row';
+            const vis = globalData.visibility && typeof globalData.visibility[app.id] !== 'undefined'
+                ? globalData.visibility[app.id]
+                : true;
+            div.innerHTML=`<input type="checkbox" ${vis?'checked':''} onchange="toggleApp('${app.id}',this.checked)"> ${app.l}`;
+            container.appendChild(div);
+        });
+    }
+    
+    function goHome() { 
+        document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); 
+        document.getElementById('homeScreen').classList.add('active'); 
+    }
+    function openScreen(id) { 
+        document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); 
+        document.getElementById(id).classList.add('active'); 
+    }
+    function setRole(r) { 
+        currentRole = r; 
+        document.getElementById('btnLeonor').classList.toggle('active', r==='leonor'); 
+        document.getElementById('btnAdulto').classList.toggle('active', r==='adulto'); 
+        applyVisibility(); 
+        goHome(); 
+    }
+
+    function applyVisibility() {
+        const v = globalData.visibility || {};
+        const tiles = { 
+            caneta: document.querySelector('[data-app="caneta"]'), 
+            despensa: document.querySelector('[data-app="despensa"]'), 
+            medicina: document.querySelector('[data-app="medicina"]'), 
+            jogo: document.querySelector('[data-app="jogo"]'), 
+            definicoes: document.querySelector('[data-app="definicoes"]') 
+        };
+        if (!tiles.caneta) return;
+        if(currentRole==='leonor') {
+            tiles.caneta.style.display = (v.caneta !== false) ? 'flex' : 'none'; 
+            tiles.despensa.style.display = (v.despensa !== false) ? 'flex' : 'none'; 
+            tiles.medicina.style.display = (v.medicina !== false) ? 'flex' : 'none'; 
+            tiles.jogo.style.display = (v.jogo !== false) ? 'flex' : 'none'; 
+            tiles.definicoes.style.display='none';
+        } else { 
+            for(let k in tiles) if (tiles[k]) tiles[k].style.display='flex'; 
+        }
+        // "Resumo" e "Relatórios" ficam sempre visíveis; Relatórios pede PIN.
+    }
+
+    /* 11. QUIZ */
+    const questions = [
+        {q:"Hipo (<70). O que fazer?", opts:["Correr","Açúcar Rápido","Insulina"], a:1},
+        {q:"Qual é o site de injeção?", opts:["Braço","Cabelo","Unha"], a:0},
+        {q:"Hiperglicemia é...", opts:["Açúcar Baixo","Açúcar Alto","Ter Fome"], a:1}
+    ];
+    let qIdx=0, score=0;
+    function startQuiz() { qIdx=0; score=0; renderQuestion(); }
+    function renderQuestion() {
+        const div = document.getElementById('quizContainer');
+        if(qIdx>=questions.length) { 
+            div.innerHTML=`<div style="text-align:center"><h3>Fim! Score: ${score}/${questions.length}</h3><button class="btn-calc" onclick="startQuiz()">JOGAR DE NOVO</button></div>`; 
+            return; 
+        }
+        const q=questions[qIdx]; 
+        let html=`<h3 style="margin-top:0">${q.q}</h3>`;
+        q.opts.forEach((o,i)=>{ 
+            html+=`<button class="quiz-option-btn" style="width:100%;padding:10px;margin-bottom:5px;background:#fce7f3;border:1px solid #f9a8d4;color:#831843;text-align:left;border-radius:8px;" onclick="ans(${i})">${o}</button>`; 
+        });
+        div.innerHTML=html;
+    }
+    function ans(i) { if(i===questions[qIdx].a) score++; qIdx++; renderQuestion(); }
+
+    /* 12. INICIALIZAÇÃO VISUAL */
+    // Garante que o menu da Leonor já respeita as visibilidades por defeito
+    applyVisibility();
+</script>
+</body>
+</html>

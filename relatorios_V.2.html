@@ -1,0 +1,1881 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Leonor – Relatórios mg/dL</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Firebase (mesmo projeto da app Leonor) -->
+  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+
+  <!-- Google Fonts para um ar mais moderno/leve -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #ec4899;       /* Pink 500 */
+      --primary-dark: #be185d;  /* Pink 700 */
+      --primary-light: #fce7f3; /* Pink 100 */
+      --accent: #f472b6;        /* Pink 400 */
+      --bg-body: #fff1f2;       /* Rose 50 */
+      --card-bg: #ffffff;
+      --text-main: #374151;     /* Gray 700 */
+      --text-sub: #6b7280;      /* Gray 500 */
+      --border: #fbcfe8;        /* Pink 200 */
+      --shadow: 0 10px 25px -5px rgba(236, 72, 153, 0.15), 0 8px 10px -6px rgba(236, 72, 153, 0.1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Quicksand', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); /* Fundo Rosa Suave */
+      color: var(--text-main);
+      padding: 1.5rem;
+      min-height: 100vh;
+    }
+
+    .app-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* --- HEADER --- */
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.2rem 1.5rem;
+      border-radius: 1.2rem;
+      background: linear-gradient(135deg, #ec4899, #db2777); /* Gradiente Rosa Forte */
+      color: white;
+      box-shadow: 0 10px 30px rgba(219, 39, 119, 0.4);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .app-title {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+    .app-icon {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: white;
+      color: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 1.5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .app-title-main {
+      font-size: 1.2rem;
+      font-weight: 700;
+      display: flex; flex-direction: column;
+    }
+    .app-title-sub {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.9);
+      margin-top: 2px;
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      font-size: 0.75rem; color: var(--primary-dark);
+      padding: 0.2rem 0.6rem; border-radius: 999px;
+      background: white;
+      font-weight: 600;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      margin-bottom: 0.3rem;
+    }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; }
+
+    /* --- CHIPS & PILLS --- */
+    .chips-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .chip {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font-size: 0.75rem; padding: 0.25rem 0.8rem;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  color: #111827;            /* preto / quase preto */
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+    .pill {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      font-size: 0.75rem; padding: 0.2rem 0.7rem;
+      border-radius: 999px;
+      background: var(--primary-light);
+      border: 1px solid var(--border);
+      color: var(--primary-dark);
+      font-weight: 600;
+    }
+    .pill-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
+    .pill-dot-yellow { background: #eab308; }
+    .pill-dot-red { background: #ef4444; }
+    .pill-dot-green { background: #22c55e; }
+
+    /* --- CARDS --- */
+    .card {
+      background: var(--card-bg);
+      border-radius: 1.2rem;
+      border: 1px solid white;
+      box-shadow: var(--shadow);
+      padding: 1.5rem;
+      display: flex; flex-direction: column; gap: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+    /* Efeito subtil de vidro/brilho no topo do card */
+    .card::before {
+      content: ""; position: absolute; top: 0; left: 0; right: 0; height: 6px;
+      background: linear-gradient(90deg, #f9a8d4, #f472b6);
+      opacity: 0.6;
+    }
+
+    .card-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: 1rem; margin-bottom: 0.5rem;
+    }
+    .card-title { display: flex; align-items: center; gap: 0.8rem; }
+    .card-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, #fbcfe8, #fce7f3);
+      color: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.8);
+    }
+    .card-title-text-main { font-size: 1.05rem; font-weight: 700; color: var(--text-main); }
+    .card-title-text-sub { font-size: 0.85rem; color: var(--text-sub); }
+
+    /* --- LAYOUT GRID --- */
+    .grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.5rem; }
+    @media(max-width: 900px) {
+      .app-header { flex-direction: column; align-items: flex-start; }
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    /* --- FORMS & INPUTS --- */
+    .form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.8rem; }
+    .label { font-size: 0.85rem; color: var(--text-main); font-weight: 600; }
+    .input {
+      width: 100%; padding: 0.6rem 0.8rem;
+      border-radius: 0.8rem;
+      border: 2px solid var(--border);
+      background: #fff;
+      color: var(--text-main);
+      font-size: 0.9rem;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+
+    /* --- BOTÕES --- */
+    .btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.5rem; }
+    .btn-primary, .btn-secondary {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 0.5rem; padding: 0.6rem 1.2rem;
+      border-radius: 999px; border: none;
+      font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; transition: transform 0.1s, box-shadow 0.2s;
+      font-family: inherit;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #ec4899, #db2777);
+      color: white;
+      box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(236, 72, 153, 0.6); }
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-secondary {
+      background: white; color: var(--text-main);
+      border: 2px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--primary); background: #fffbff; }
+    .btn-secondary.danger { border-color: #fca5a5; color: #dc2626; }
+    .btn-secondary.danger:hover { background: #fef2f2; }
+
+    /* --- LOG / DIAGNÓSTICO --- */
+    #log {
+      font-family: 'Consolas', monospace; font-size: 0.75rem;
+      max-height: 210px; overflow: auto;
+      background: #fafafa;
+      border: 2px dashed var(--border);
+      border-radius: 0.8rem; padding: 0.8rem;
+      color: #52525b;
+    }
+    #log .line { margin-bottom: 0.2rem; border-bottom: 1px solid #f4f4f5; padding-bottom: 2px; }
+    #log .time { color: #a1a1aa; margin-right: 0.3rem; }
+    #log .msg-ok { color: #059669; }
+    #log .msg-warn { color: #d97706; }
+    #log .msg-error { color: #dc2626; }
+
+    /* --- RESUMO NUMÉRICO --- */
+    #summary-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+    @media(max-width: 900px) { #summary-cards { grid-template-columns: repeat(2, 1fr); } }
+    
+    .summary-card {
+      border-radius: 1rem;
+      padding: 1rem;
+      background: linear-gradient(to bottom right, #ffffff, #fff1f2);
+      border: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 0.4rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .summary-label { font-size: 0.8rem; color: var(--text-sub); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .summary-main { display: flex; align-items: baseline; gap: 0.2rem; }
+    .summary-value { font-size: 1.8rem; font-weight: 800; color: var(--text-main); }
+    .summary-unit { font-size: 0.85rem; color: var(--text-sub); }
+    
+    .summary-chip {
+      margin-top: 0.2rem; border-radius: 6px;
+      padding: 0.3rem 0.6rem; font-size: 0.75rem;
+      background: #f4f4f5; border: 1px solid #e4e4e7;
+      color: var(--text-sub); font-weight: 600;
+      text-align: left;
+    }
+    /* Cores Semânticas para os Chips */
+    .summary-chip.green { background: #dcfce7; border-color: #86efac; color: #15803d; }
+    .summary-chip.yellow { background: #fef9c3; border-color: #fde047; color: #a16207; }
+    .summary-chip.red { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; }
+
+    /* --- TABS / SECÇÕES --- */
+    .section-tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .section-tab {
+      border-radius: 999px; padding: 0.4rem 1rem;
+      font-size: 0.85rem; font-weight: 600; font-family: inherit;
+      border: 2px solid transparent;
+      background: #fce7f3; color: var(--primary-dark);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .section-tab:hover { background: #fbcfe8; }
+    .section-tab.active {
+      background: var(--primary); color: white;
+      box-shadow: 0 4px 10px rgba(236, 72, 153, 0.3);
+    }
+    .section-panel { display: none; }
+    .section-panel.active { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* --- GRÁFICOS --- */
+    canvas { width: 100%; height: 250px; max-height: 300px; }
+    .two-col { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1.5rem; }
+    @media(max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+    /* --- RELATÓRIO TEXTO --- */
+    #reportContainer {
+      margin-top: 0.5rem; border-radius: 1rem;
+      border: 2px solid var(--primary-light);
+      padding: 1.2rem;
+      background: #fffafa;
+      max-height: 500px; overflow: auto;
+      box-shadow: inset 0 2px 10px rgba(0,0,0,0.02);
+    }
+    .report-section { margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px dashed #e5e7eb; }
+    .report-section:last-child { border-bottom: none; }
+    .report-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.4rem; color: var(--primary-dark); }
+    .report-body { font-size: 0.85rem; color: #4b5563; line-height: 1.6; }
+    .report-body strong { color: #1f2937; }
+    .report-body ul { margin: 0.4rem 0 0.4rem 1.2rem; }
+    .report-body li { margin-bottom: 0.2rem; }
+
+    /* --- HISTÓRICO --- */
+    #historyPreview, #compareSummary, #alarmsList {
+      font-size: 0.8rem; color: #4b5563;
+      background: #fafafa; border: 1px solid #e4e4e7;
+      border-radius: 0.8rem; padding: 0.8rem;
+    }
+    #historyPreview hr { border: none; border-top: 1px solid #e4e4e7; margin: 0.5rem 0; }
+    .small-text { font-size: 0.75rem; color: var(--text-sub); }
+  </style>
+</head>
+<body>
+<div class="app-container">
+  
+  <!-- CABEÇALHO ROSA -->
+  <header class="app-header">
+    <div class="app-title">
+      <div class="app-icon">L</div>
+      <div>
+        <div class="badge"><span class="badge-dot"></span> Relatórios mg/dL</div>
+        <div class="app-title-main">
+          <span>Leonor – Análise de dados da bomba/CGM</span>
+          <span class="app-title-sub">Carrega o ZIP da Tandem ou reabre um relatório guardado para ver gráficos + texto em linguagem simples.</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:0.4rem; align-items:flex-end;">
+      <div class="chips-row" style="justify-content:flex-end; margin-top:0;">
+        <div class="chip"><span class="pill-dot"></span> Faixa alvo 70–180 mg/dL</div>
+        <div class="chip"><span class="pill-dot pill-dot-yellow"></span> Noite ideal 90–150 mg/dL</div>
+      </div>
+      <div class="small-text" style="color: rgba(255,255,255,0.8);">Ferramenta para pais + equipa médica. Não substitui a consulta, ajuda a organizar dúvidas.</div>
+    </div>
+  </header>
+
+  <!-- 1. Upload -->
+  <section class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <div class="card-icon">📁</div>
+        <div>
+          <div class="card-title-text-main">1. Carregamento dos ficheiros</div>
+          <div class="card-title-text-sub">ZIP da Tandem com CGM, bólus e alarmes ou reabrir um relatório guardado na base.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
+        <span class="pill"><span class="pill-dot"></span> ZIP CGM/Bólus/Alarmes</span>
+        <span class="pill"><span class="pill-dot pill-dot-yellow"></span> Relatório na base (opcional)</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <div class="form-group">
+          <div class="label">ZIP exportado da Tandem (obrigatório para novo relatório)</div>
+          <input id="zipInput" type="file" class="input" accept=".zip">
+          <div class="small-text" style="margin-top:.25rem;">
+            Esperado: <strong>cgm_data_1.csv</strong>, <strong>Insulin data/bolus_data_1.csv</strong>, <strong>alarms_data_1.csv</strong>.
+          </div>
+        </div>
+
+        <!-- Ver relatório guardado na base -->
+        <div class="form-group">
+          <div class="label">Ver relatório guardado na base (opcional)</div>
+          <select id="selectHistoryStep1" class="input">
+            <option value="">Escolhe um relatório guardado…</option>
+          </select>
+          <div class="btn-row" style="margin-top:.35rem;">
+            <button id="btnLoadFromFirebase" class="btn-secondary">
+              <span class="icon">☁️</span><span>Carregar relatório da base</span>
+            </button>
+          </div>
+          <div class="small-text" style="margin-top:.25rem;">
+            Isto repõe o resumo, os gráficos (quando guardados) e o texto com base num relatório já gravado na Firebase.
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button id="btnLoad" class="btn-primary"><span class="icon">⚙️</span><span>Carregar e analisar dados (ZIP)</span></button>
+          <button id="btnClear" class="btn-secondary danger">🔁 Limpar tudo</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="label">Diagnóstico técnico (log)</div>
+        <div id="log"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Resumo -->
+  <section class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <div class="card-icon">📊</div>
+        <div>
+          <div class="card-title-text-main">2. Resumo rápido dos números</div>
+          <div class="card-title-text-sub">Tempo em alvo, hipos, insulina e visão global.</div>
+        </div>
+      </div>
+      <div class="chips-row" style="justify-content:flex-end;margin-top:0;">
+        <div class="chip"><span class="pill-dot"></span> Bom sinal</div>
+        <div class="chip"><span class="pill-dot pill-dot-yellow"></span> A vigiar</div>
+        <div class="chip"><span class="pill-dot pill-dot-red"></span> Falar com equipa</div>
+      </div>
+    </div>
+
+    <div id="summary-cards">
+      <div class="summary-card">
+        <div class="summary-label">Tempo em alvo (70–180)</div>
+        <div class="summary-main"><span id="tirPercent" class="summary-value">–</span><span class="summary-unit">%</span></div>
+        <div id="tirChip" class="summary-chip">Sem dados</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Hipoglicemias (&lt;70)</div>
+        <div class="summary-main"><span id="hypoCount" class="summary-value">–</span><span class="summary-unit">episódios</span></div>
+        <div id="hypoChip" class="summary-chip">Sem dados</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Insulina total estimada</div>
+        <div class="summary-main"><span id="insulinTotal" class="summary-value">–</span><span class="summary-unit">U/dia</span></div>
+        <div id="basalBolusChip" class="summary-chip">Sem dados</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Período analisado</div>
+        <div class="summary-main"><span id="periodLabel" class="summary-value" style="font-size:1rem;">–</span></div>
+        <div id="globalChip" class="summary-chip">Carrega o ZIP para ver o resumo.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Gráficos -->
+  <section class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <div class="card-icon">📈</div>
+        <div>
+          <div class="card-title-text-main">3. Gráficos de padrões</div>
+          <div class="card-title-text-sub">Por horário, hipos nocturnas, basal vs bólus e alarmes.</div>
+        </div>
+      </div>
+      <div class="section-tabs">
+        <button class="section-tab active" data-section="charts-hourly">Por horário (24h)</button>
+        <button class="section-tab" data-section="charts-night">Risco nocturno</button>
+        <button class="section-tab" data-section="charts-insulin">Basal vs Bólus</button>
+        <button class="section-tab" data-section="charts-alarms">Alarmes</button>
+      </div>
+    </div>
+
+    <div class="section-panel active" id="charts-hourly">
+      <div class="two-col">
+        <div>
+          <div class="small-text">Percentagem de leituras em alvo por hora do dia.</div>
+          <canvas id="chartHourly"></canvas>
+        </div>
+        <div>
+          <div class="small-text">Resumo em texto</div>
+          <div id="hourlySummary" class="report-body" style="margin-top:.3rem;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-panel" id="charts-night">
+      <div class="two-col">
+        <div>
+          <div class="small-text">Hipos entre 00h–06h.</div>
+          <canvas id="chartNight"></canvas>
+        </div>
+        <div>
+          <div class="small-text">Resumo em texto</div>
+          <div id="nightSummary" class="report-body" style="margin-top:.3rem;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-panel" id="charts-insulin">
+      <div class="two-col">
+        <div>
+          <div class="small-text">Distribuição estimada Basal vs Bólus.</div>
+          <canvas id="chartInsulin"></canvas>
+        </div>
+        <div>
+          <div class="small-text">Resumo em texto</div>
+          <div id="insulinSummary" class="report-body" style="margin-top:.3rem;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-panel" id="charts-alarms">
+      <div class="two-col">
+        <div>
+          <div class="small-text">Análise global dos alarmes/eventos da bomba.</div>
+          <div id="alarmsSummary" class="report-body" style="margin-top:.3rem;"></div>
+        </div>
+        <div>
+          <div class="small-text">Últimos alarmes registados</div>
+          <div id="alarmsList" class="report-body" style="margin-top:.3rem;max-height:220px;overflow-y:auto;"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Relatório explicativo -->
+  <section class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <div class="card-icon">📝</div>
+        <div>
+          <div class="card-title-text-main">4. Relatório em linguagem simples</div>
+          <div class="card-title-text-sub">Resumo em texto para levar à consulta ou guardar em PDF.</div>
+        </div>
+      </div>
+      <div>
+        <div class="small-text" style="margin-bottom:.25rem;">O texto é uma ajuda para organizar ideias, não substitui a opinião da equipa médica.</div>
+        <button id="btnCopyReport" class="btn-secondary">📋 Copiar texto</button>
+      </div>
+    </div>
+
+    <div id="reportContainer">
+      <div class="report-section">
+        <div class="report-title">Sem dados ainda</div>
+        <div class="report-body">
+          <p>Carrega o ZIP da Tandem para gerar o relatório com base nos dados reais.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Firebase: guardar, rever e comparar relatórios -->
+  <section class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <div class="card-icon">☁️</div>
+        <div>
+          <div class="card-title-text-main">5. Guardar, rever e comparar relatórios</div>
+          <div class="card-title-text-sub">Sincronizado com a Firebase para a família e equipa médica.</div>
+        </div>
+      </div>
+      <div class="small-text" id="firebaseStatus">A ligar à nuvem…</div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <div class="form-group">
+          <div class="label">Guardar relatório actual</div>
+          <button id="btnSaveReport" class="btn-primary">
+            <span class="icon">💾</span><span>Guardar este relatório na nuvem</span>
+          </button>
+          <div class="small-text" style="margin-top:.25rem;">
+            Guarda depois de confirmares que o período e os números fazem sentido.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="label">Ver relatório guardado</div>
+          <select id="selectHistory" class="input">
+            <option value="">Escolhe um relatório guardado…</option>
+          </select>
+        </div>
+        <div class="small-text" style="margin-bottom:.2rem;">Resumo do relatório escolhido:</div>
+        <div id="historyPreview"></div>
+      </div>
+
+      <div>
+        <div class="form-group">
+          <div class="label">Comparar dois relatórios</div>
+          <select id="selectCompareA" class="input" style="margin-bottom:.35rem;">
+            <option value="">Relatório A…</option>
+          </select>
+          <select id="selectCompareB" class="input">
+            <option value="">Relatório B…</option>
+          </select>
+        </div>
+        <div class="small-text" style="margin-bottom:.2rem;">Resumo da comparação</div>
+        <div id="compareSummary"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- libs -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+  // ===== ESTADO =====
+  let cgmReadings = [];
+  let bolusEvents = [];
+  let alarmsEvents = [];
+  let excelPlan = null;
+  let chartHourly = null, chartNight = null, chartInsulin = null;
+
+  // Firebase / histórico
+  let firebaseApp = null;
+  let db = null;
+  let auth = null;
+  let firebaseReady = false;
+  let appId = 'fam-machado-brites';
+
+  let firebaseConfig = {
+    apiKey: "AIzaSyB-JyydZwX1zTfB5i0AV0fMI-3ayqEjCD0",
+    authDomain: "app-nono.firebaseapp.com",
+    projectId: "app-nono",
+    storageBucket: "app-nono.firebasestorage.app",
+    messagingSenderId: "960955367814",
+    appId: "1:960955367814:web:05ac468556a9d1e76dac07",
+    measurementId: "G-DDSD0BHJ0X"
+  };
+
+  // se vier injetado pela app principal, continua a respeitar:
+  if (typeof __firebase_config !== 'undefined') {
+    try { firebaseConfig = JSON.parse(__firebase_config); } catch(e) {}
+  }
+  if (typeof __app_id !== 'undefined' && __app_id) {
+    appId = __app_id;
+  }
+
+  let reportsCache = [];
+  let lastComputedStats = null;
+  let lastAlarmStats = null;
+  let lastReportHtml = '';
+
+  // ===== LOG =====
+  function log(msg, level='info'){
+    const logEl = document.getElementById('log');
+    if(!logEl) return;
+    const line = document.createElement('div');
+    line.className = 'line';
+    const now = new Date();
+    const t = now.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+    line.innerHTML = '<span class="time">['+t+']</span> ';
+    const span = document.createElement('span');
+    span.className = level==='error' ? 'msg-error' : (level==='warn' ? 'msg-warn' : 'msg-ok');
+    span.textContent = msg;
+    line.appendChild(span);
+    logEl.appendChild(line);
+    logEl.scrollTop = logEl.scrollHeight;
+    console.log(msg);
+  }
+
+  // ===== DATAS =====
+  function parsePtDate(str){
+    if(!str) return null;
+    const m = str.match(/(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}):(\d{2})/);
+    if(m){
+      const dd = Number(m[1]), mm = Number(m[2])-1, yyyy = Number(m[3]), HH = Number(m[4]), MM = Number(m[5]);
+      return new Date(yyyy,mm,dd,HH,MM);
+    }
+    const d = new Date(str);
+    return isNaN(d) ? null : d;
+  }
+  function dateKeyFromDate(d){
+    if(!(d instanceof Date) || isNaN(d)) return null;
+    const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+    return y+'-'+m+'-'+day;
+  }
+  function hourFromDate(d){
+    if(!(d instanceof Date) || isNaN(d)) return null;
+    return d.getHours();
+  }
+
+  // ===== CGM =====
+  async function loadCgmFromZip(zip){
+    const files = zip.file(/cgm_data_.*\.csv$/i);
+    if(!files.length){ log('Não encontrei cgm_data_*.csv no ZIP.','warn'); return; }
+    const f = files[0];
+    log('CGM: a usar ficheiro '+f.name);
+    const txt = await f.async('string');
+    const lines = txt.split(/\r?\n/);
+    if(!lines.length){ log('Ficheiro CGM vazio.','warn'); return; }
+    const dataText = lines.slice(1).join('\n');
+    const parsed = Papa.parse(dataText,{header:true,skipEmptyLines:true});
+    if(parsed.errors && parsed.errors.length) log('Aviso PapaParse CGM: '+parsed.errors[0].message,'warn');
+    const rows = parsed.data;
+    log('CGM: linhas lidas (com header): '+rows.length);
+    const list=[];
+    for(const row of rows){
+      const dtStr = row['Carimbo de data/hora'];
+      const valStr = row['Valor de glicose MCG (mg/dl)'] ||
+                     row['Valor de glicose MCG (mg/dL)'] ||
+                     row['Glicemia (mg/dL)'] ||
+                     row['Glicemia (mg/dl)'];
+      if(!dtStr || valStr==null || valStr==='') continue;
+      const dt = parsePtDate(dtStr);
+      if(!dt || isNaN(dt)) continue;
+      const val = parseFloat(String(valStr).replace(',','.'));
+      if(!Number.isFinite(val)) continue;
+      list.push({datetime:dt,value:val,dateKey:dateKeyFromDate(dt),hour:hourFromDate(dt)});
+    }
+    list.sort((a,b)=>a.datetime-b.datetime);
+    cgmReadings=list;
+    log('Leituras CGM válidas: '+list.length);
+  }
+
+  // ===== BÓLUS =====
+  async function loadBolusFromZip(zip){
+    const files = zip.file(/Insulin data\/bolus_data_.*\.csv$/i);
+    if(!files.length){ log('Não encontrei Insulin data/bolus_data_*.csv no ZIP.','warn'); return; }
+    const f=files[0];
+    log('Bólus: a usar ficheiro '+f.name);
+    const txt=await f.async('string');
+    const lines=txt.split(/\r?\n/);
+    if(!lines.length){ log('Ficheiro de bólus vazio.','warn'); return; }
+    const dataText=lines.slice(1).join('\n');
+    const parsed=Papa.parse(dataText,{header:true,skipEmptyLines:true});
+    if(parsed.errors && parsed.errors.length) log('Aviso PapaParse Bólus: '+parsed.errors[0].message,'warn');
+    const rows=parsed.data;
+    log('Bólus: linhas lidas (com header): '+rows.length);
+    const list=[];
+    for(const row of rows){
+      const dtStr=row['Carimbo de data/hora'];
+      if(!dtStr) continue;
+      const dt=parsePtDate(dtStr);
+      if(!dt || isNaN(dt)) continue;
+      const unitsRaw=row['Insulina administrada (Unid.)'];
+      const carbsRaw=row['Introdução dos hidratos de carbono (g)'];
+      let units=null, carbs=null;
+      if(unitsRaw!=null && unitsRaw!==''){
+        units=parseFloat(String(unitsRaw).replace(',','.'));
+        if(!Number.isFinite(units)) units=null;
+      }
+      if(carbsRaw!=null && carbsRaw!==''){
+        carbs=parseFloat(String(carbsRaw).replace(',','.'));
+        if(!Number.isFinite(carbs)) carbs=null;
+      }
+      list.push({datetime:dt,units,carbs,dateKey:dateKeyFromDate(dt)});
+    }
+    list.sort((a,b)=>a.datetime-b.datetime);
+    bolusEvents=list;
+    log('Eventos de bólus carregados: '+list.length);
+  }
+
+  // ===== ALARMES =====
+  async function loadAlarmsFromZip(zip){
+    const files = zip.file(/alarms_data_.*\.csv$/i);
+    if(!files.length){ log('Não encontrei alarms_data_*.csv no ZIP.','warn'); return; }
+    const f=files[0];
+    log('Alarmes: a usar ficheiro '+f.name);
+    const txt=await f.async('string');
+    const lines=txt.split(/\r?\n/);
+    if(!lines.length){ log('Ficheiro de alarmes vazio.','warn'); return; }
+    const dataText=lines.slice(1).join('\n');
+    const parsed=Papa.parse(dataText,{header:true,skipEmptyLines:true});
+    if(parsed.errors && parsed.errors.length) log('Aviso PapaParse Alarmes: '+parsed.errors[0].message,'warn');
+    const rows=parsed.data;
+    log('Alarmes: linhas lidas (com header): '+rows.length);
+    const list=[];
+    for(const row of rows){
+      const dtStr=row['Carimbo de data/hora'];
+      const ev=row['Alarme/Evento'];
+      if(!dtStr || !ev) continue;
+      const dt=parsePtDate(dtStr);
+      if(!dt || isNaN(dt)) continue;
+      list.push({datetime:dt,event:ev,dateKey:dateKeyFromDate(dt)});
+    }
+    list.sort((a,b)=>a.datetime-b.datetime);
+    alarmsEvents=list;
+    log('Registos de alarmes carregados: '+list.length);
+  }
+
+  // ===== EXCEL PLANO (opcional) =====
+  async function loadExcelPlan(file){
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf,{type:'array'});
+    const sheetName = wb.SheetNames[0];
+    const sheet = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet,{header:1,defval:''});
+    log('Excel: linhas lidas '+rows.length);
+    excelPlan = {rows};
+  }
+
+  // ===== ESTATÍSTICAS NUMÉRICAS =====
+  function computeStats(){
+    const s = {
+      tir:0,tbr:0,tar:0,
+      hypoCount:0,nightTotalNights:0,nightHypoNights:0,
+      insulinTotal:0,insulinBasal:0,insulinBolus:0,
+      periodFrom:null,periodTo:null,days:0
+    };
+    if(!cgmReadings.length){
+      lastComputedStats = s;
+      return s;
+    }
+    const values=cgmReadings.map(r=>r.value);
+    const minDate=cgmReadings[0].datetime;
+    const maxDate=cgmReadings[cgmReadings.length-1].datetime;
+    s.periodFrom=minDate; s.periodTo=maxDate;
+    const msDay=24*60*60*1000;
+    s.days=Math.max(1,Math.round((maxDate-minDate)/msDay));
+
+    let inRange=0,low=0,high=0;
+    for(const v of values){
+      if(v<70) low++;
+      else if(v>180) high++;
+      else inRange++;
+    }
+    const total=values.length||1;
+    s.tir=(inRange/total)*100;
+    s.tbr=(low/total)*100;
+    s.tar=(high/total)*100;
+
+    const hypos=cgmReadings.filter(r=>r.value<70);
+    s.hypoCount=hypos.length;
+    const byNight=new Map();
+    for(const r of cgmReadings){
+      const h=hourFromDate(r.datetime);
+      if(h>=0 && h<6){
+        const dk=dateKeyFromDate(r.datetime);
+        if(!byNight.has(dk)) byNight.set(dk,[]);
+        byNight.get(dk).push(r);
+      }
+    }
+    s.nightTotalNights=byNight.size;
+    let nightsWithHypo=0;
+    for(const arr of byNight.values()){
+      if(arr.some(r=>r.value<70)) nightsWithHypo++;
+    }
+    s.nightHypoNights=nightsWithHypo;
+
+    // insulina
+    let bolusTotal=0; const byDate=new Map();
+    for(const ev of bolusEvents){
+      if(!ev.units && !ev.carbs) continue;
+      const dk=ev.dateKey;
+      if(!byDate.has(dk)) byDate.set(dk,[]);
+      byDate.get(dk).push(ev);
+      if(ev.units) bolusTotal+=ev.units;
+    }
+    const daysWithBolus=byDate.size||s.days;
+    const bolusPerDay=daysWithBolus?bolusTotal/daysWithBolus:0;
+    let basalPerDay=0;
+    if(excelPlan && excelPlan.rows){
+      for(const row of excelPlan.rows){
+        if(!Array.isArray(row) || !row.length) continue;
+        const c0=String(row[0]??'').toLowerCase();
+        if(c0.includes('basal') && c0.includes('total')){
+          const raw=row[1];
+          if(raw!=null && raw!==''){
+            const v=parseFloat(String(raw).replace(',','.'));
+            if(Number.isFinite(v)){ basalPerDay=v; break; }
+          }
+        }
+      }
+    }
+    if(!basalPerDay && bolusPerDay) basalPerDay=bolusPerDay*0.8;
+    s.insulinBasal=basalPerDay;
+    s.insulinBolus=bolusPerDay;
+    s.insulinTotal=basalPerDay+bolusPerDay;
+
+    lastComputedStats = s;
+    return s;
+  }
+
+  // ===== ESTATÍSTICAS DE ALARMES =====
+  function computeAlarmStats(){
+    const res = {
+      total: alarmsEvents.length,
+      first: null,
+      last: null,
+      byType: [],
+      nightAlarms: 0,
+      dayAlarms: 0
+    };
+    if(!alarmsEvents.length){
+      lastAlarmStats = res;
+      return res;
+    }
+    const counts = new Map();
+    let first = alarmsEvents[0].datetime;
+    let last = alarmsEvents[alarmsEvents.length-1].datetime;
+    let night=0, day=0;
+    for(const ev of alarmsEvents){
+      const txt=(ev.event||'Sem descrição').trim();
+      const key=txt;
+      counts.set(key,(counts.get(key)||0)+1);
+      const h = hourFromDate(ev.datetime);
+      if(h>=0 && h<6) night++; else day++;
+      if(ev.datetime<first) first=ev.datetime;
+      if(ev.datetime>last) last=ev.datetime;
+    }
+    res.first=first;
+    res.last=last;
+    res.nightAlarms=night;
+    res.dayAlarms=day;
+    res.byType=Array.from(counts.entries()).sort((a,b)=>b[1]-a[1]);
+    lastAlarmStats = res;
+    return res;
+  }
+
+  // ===== DISTRIBUIÇÕES PARA GUARDAR NA BASE =====
+  function computeHourlyDistributionForSave(){
+    const byHour=Array.from({length:24},()=>({total:0,inRange:0,low:0,high:0}));
+    for(const r of cgmReadings){
+      const h = hourFromDate(r.datetime);
+      if(h<0 || h>23) continue;
+      const slot = byHour[h];
+      slot.total++;
+      if(r.value<70) slot.low++;
+      else if(r.value>180) slot.high++;
+      else slot.inRange++;
+    }
+    return byHour.map(slot=>{
+      const total = slot.total || 0;
+      if(!total){
+        return {total:0,inRangePct:0,lowPct:0,highPct:0};
+      }
+      return {
+        total,
+        inRangePct:(slot.inRange/total)*100,
+        lowPct:(slot.low/total)*100,
+        highPct:(slot.high/total)*100
+      };
+    });
+  }
+
+  function computeNightHypoSeriesForSave(){
+    const map=new Map();
+    for(const r of cgmReadings){
+      const h = hourFromDate(r.datetime);
+      if(h>=0 && h<6 && r.value<70){
+        const dk = dateKeyFromDate(r.datetime);
+        map.set(dk,(map.get(dk)||0)+1);
+      }
+    }
+    return Array.from(map.entries()).map(([dateKey,count])=>({dateKey,count}));
+  }
+
+  function buildAlarmSampleForSave(maxItems=20){
+    if(!alarmsEvents.length) return [];
+    const recent = [...alarmsEvents].slice(-maxItems);
+    return recent.map(ev=>({
+      datetime: ev.datetime ? ev.datetime.toISOString() : null,
+      event: ev.event || ''
+    }));
+  }
+
+  // ===== CLASSIFICAÇÕES =====
+  function classifyTIR(tir){
+    if(tir>=60) return {label:'Bom controlo para pediatria',color:'green'};
+    if(tir>=50) return {label:'Zona aceitável, ainda com margem',color:'yellow'};
+    if(tir>=40) return {label:'Abaixo do desejável, rever plano',color:'yellow'};
+    return {label:'Tempo em alvo baixo, importante ajustar',color:'red'};
+  }
+  function classifyHypos(s){
+    if(!s.hypoCount) return {label:'Sem hipoglicemias registadas',color:'green'};
+    if(!s.nightTotalNights) return {label:'Há hipos, mas sem dados nocturnos suficientes',color:'yellow'};
+    const p=(s.nightHypoNights/s.nightTotalNights)*100;
+    if(p<=20) return {label:'Hipos pouco frequentes',color:'green'};
+    if(p<=40) return {label:'Hipos moderadas (vigiar)',color:'yellow'};
+    return {label:'Hipos nocturnas frequentes',color:'red'};
+  }
+  function classifyBasalBolus(s){
+    const tot=s.insulinTotal;
+    if(!tot) return {label:'Sem dados suficientes',color:'yellow'};
+    const p=(s.insulinBasal/tot)*100;
+    if(p>=40 && p<=60) return {label:'Basal ~'+p.toFixed(0)+'% (faixa típica)',color:'green'};
+    if(p<35) return {label:'Basal ~'+p.toFixed(0)+'% (pode estar baixa)',color:'yellow'};
+    if(p>65) return {label:'Basal ~'+p.toFixed(0)+'% (pode estar alta)',color:'yellow'};
+    return {label:'Basal ~'+p.toFixed(0)+'% (fora da faixa típica)',color:'red'};
+  }
+
+  // ===== RESUMO NUMÉRICO (dados atuais) =====
+  function updateSummary(){
+    const s=computeStats();
+    const tirPercentEl=document.getElementById('tirPercent');
+    const tirChipEl=document.getElementById('tirChip');
+    const hypoCountEl=document.getElementById('hypoCount');
+    const hypoChipEl=document.getElementById('hypoChip');
+    const insulinTotalEl=document.getElementById('insulinTotal');
+    const basalBolusChipEl=document.getElementById('basalBolusChip');
+    const periodLabelEl=document.getElementById('periodLabel');
+    const globalChipEl=document.getElementById('globalChip');
+
+    if(!cgmReadings.length){
+      tirPercentEl.textContent='–'; tirChipEl.textContent='Sem dados'; tirChipEl.className='summary-chip';
+      hypoCountEl.textContent='–'; hypoChipEl.textContent='Sem dados'; hypoChipEl.className='summary-chip';
+      insulinTotalEl.textContent='–'; basalBolusChipEl.textContent='Sem dados'; basalBolusChipEl.className='summary-chip';
+      periodLabelEl.textContent='Sem período'; globalChipEl.textContent='Carrega o ZIP para ver o resumo.'; globalChipEl.className='summary-chip';
+      return;
+    }
+    tirPercentEl.textContent=s.tir.toFixed(0);
+    const tClass=classifyTIR(s.tir);
+    tirChipEl.textContent=tClass.label; tirChipEl.className='summary-chip '+tClass.color;
+
+    hypoCountEl.textContent=s.hypoCount;
+    const hClass=classifyHypos(s);
+    hypoChipEl.textContent=hClass.label; hypoChipEl.className='summary-chip '+hClass.color;
+
+    insulinTotalEl.textContent=s.insulinTotal?s.insulinTotal.toFixed(1):'–';
+    const bClass=classifyBasalBolus(s);
+    basalBolusChipEl.textContent=bClass.label; basalBolusChipEl.className='summary-chip '+bClass.color;
+
+    if(s.periodFrom && s.periodTo){
+      const fmt=d=>d.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'});
+      periodLabelEl.textContent=fmt(s.periodFrom)+' a '+fmt(s.periodTo)+' · '+s.days+' dias';
+    }else{
+      periodLabelEl.textContent='Período não identificado';
+    }
+    globalChipEl.textContent=tClass.label+' · '+hClass.label+' · Insulina total ~ '+(s.insulinTotal?s.insulinTotal.toFixed(1)+' U/dia':'sem estimativa')+'.';
+    globalChipEl.className='summary-chip';
+  }
+
+  // ===== RESUMO NUMÉRICO (relatório guardado) =====
+  function applySummaryFromSaved(d){
+    const tirPercentEl=document.getElementById('tirPercent');
+    const tirChipEl=document.getElementById('tirChip');
+    const hypoCountEl=document.getElementById('hypoCount');
+    const hypoChipEl=document.getElementById('hypoChip');
+    const insulinTotalEl=document.getElementById('insulinTotal');
+    const basalBolusChipEl=document.getElementById('basalBolusChip');
+    const periodLabelEl=document.getElementById('periodLabel');
+    const globalChipEl=document.getElementById('globalChip');
+
+    const tir = (typeof d.tir === 'number') ? d.tir : (d.tir ? Number(d.tir) : 0);
+    const tbr = (typeof d.tbr === 'number') ? d.tbr : (d.tbr ? Number(d.tbr) : 0);
+    const tar = (typeof d.tar === 'number') ? d.tar : (d.tar ? Number(d.tar) : 0);
+    const s = {
+      tir,
+      tbr,
+      tar,
+      hypoCount: d.hypoCount ?? 0,
+      nightTotalNights: d.nightTotalNights ?? 0,
+      nightHypoNights: d.nightHypoNights ?? 0,
+      insulinTotal: d.insulinTotal ?? 0,
+      insulinBasal: d.insulinBasal ?? 0,
+      insulinBolus: d.insulinBolus ?? 0
+    };
+
+    if(!tir && !s.hypoCount && !s.insulinTotal){
+      tirPercentEl.textContent='–'; tirChipEl.textContent='Sem dados'; tirChipEl.className='summary-chip';
+      hypoCountEl.textContent='–'; hypoChipEl.textContent='Sem dados'; hypoChipEl.className='summary-chip';
+      insulinTotalEl.textContent='–'; basalBolusChipEl.textContent='Sem dados'; basalBolusChipEl.className='summary-chip';
+      periodLabelEl.textContent='Sem período'; globalChipEl.textContent='Sem dados suficientes neste relatório.'; globalChipEl.className='summary-chip';
+      return;
+    }
+
+    tirPercentEl.textContent = tir ? tir.toFixed(0) : '–';
+    const tClass=classifyTIR(tir || 0);
+    tirChipEl.textContent = tir ? tClass.label : 'Sem dados';
+    tirChipEl.className = 'summary-chip' + (tir ? ' '+tClass.color : '');
+
+    hypoCountEl.textContent = s.hypoCount;
+    const hClass=classifyHypos(s);
+    hypoChipEl.textContent=hClass.label;
+    hypoChipEl.className='summary-chip '+hClass.color;
+
+    insulinTotalEl.textContent = s.insulinTotal ? s.insulinTotal.toFixed(1) : '–';
+    const bClass=classifyBasalBolus(s);
+    basalBolusChipEl.textContent=bClass.label;
+    basalBolusChipEl.className='summary-chip '+bClass.color;
+
+    const periodFrom = d.periodFrom ? new Date(d.periodFrom) : null;
+    const periodTo   = d.periodTo   ? new Date(d.periodTo)   : null;
+    const days = d.days ?? null;
+    if(periodFrom && periodTo){
+      const fmt=dt=>dt.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'});
+      periodLabelEl.textContent = fmt(periodFrom)+' a '+fmt(periodTo)+' · '+(days || '–')+' dias';
+    }else{
+      periodLabelEl.textContent = 'Período não identificado';
+    }
+
+    globalChipEl.textContent = tClass.label+' · '+hClass.label+' · Insulina total ~ '+(s.insulinTotal ? s.insulinTotal.toFixed(1)+' U/dia' : 'sem estimativa')+'.';
+    globalChipEl.className='summary-chip';
+  }
+
+  // ===== GRÁFICOS =====
+  function destroyCharts(){
+    if(chartHourly){chartHourly.destroy();chartHourly=null;}
+    if(chartNight){chartNight.destroy();chartNight=null;}
+    if(chartInsulin){chartInsulin.destroy();chartInsulin=null;}
+  }
+
+  function buildCharts(){
+    destroyCharts();
+    const s=computeStats();
+
+    // hourly
+    const ctxH=document.getElementById('chartHourly').getContext('2d');
+    const byHour=Array.from({length:24},()=>({total:0,inRange:0,low:0,high:0}));
+    for(const r of cgmReadings){
+      const h=hourFromDate(r.datetime);
+      if(h<0 || h>23) continue;
+      const slot=byHour[h];
+      slot.total++;
+      if(r.value<70) slot.low++;
+      else if(r.value>180) slot.high++;
+      else slot.inRange++;
+    }
+    const labels=[],tirData=[],lowData=[],highData=[];
+    for(let h=0;h<24;h++){
+      labels.push(String(h).padStart(2,'0')+'h');
+      const slot=byHour[h];
+      if(!slot.total){tirData.push(0);lowData.push(0);highData.push(0);}
+      else{
+        tirData.push((slot.inRange/slot.total)*100);
+        lowData.push((slot.low/slot.total)*100);
+        highData.push((slot.high/slot.total)*100);
+      }
+    }
+    chartHourly=new Chart(ctxH,{
+      type:'line',
+      data:{
+        labels,
+        datasets:[
+          {label:'Em alvo (70–180)',data:tirData,borderColor:'rgba(34,197,94,0.9)',backgroundColor:'rgba(34,197,94,0.2)',tension:0.25},
+          {label:'Baixo (<70)',data:lowData,borderColor:'rgba(248,113,113,0.9)',backgroundColor:'rgba(248,113,113,0.15)',tension:0.25},
+          {label:'Alto (>180)',data:highData,borderColor:'rgba(59,130,246,0.9)',backgroundColor:'rgba(59,130,246,0.15)',tension:0.25}
+        ]
+      },
+      options:{
+        responsive:true,
+        plugins:{legend:{labels:{color:'#4b5563',font:{size:11}}}},
+        scales:{
+          x:{ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}},
+          y:{beginAtZero:true,max:100,ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}}
+        }
+      }
+    });
+
+    // night hypos
+    const ctxN=document.getElementById('chartNight').getContext('2d');
+    const byNight=new Map();
+    for(const r of cgmReadings){
+      const h=hourFromDate(r.datetime);
+      if(h>=0 && h<6 && r.value<70){
+        const dk=dateKeyFromDate(r.datetime);
+        byNight.set(dk,(byNight.get(dk)||0)+1);
+      }
+    }
+    const nLabels=[],nData=[];
+    for(const [dk,count] of byNight.entries()){nLabels.push(dk);nData.push(count);}
+    chartNight=new Chart(ctxN,{
+      type:'bar',
+      data:{labels:nLabels,datasets:[{label:'Hipos 00h–06h',data:nData,backgroundColor:'rgba(248,113,113,0.7)'}]},
+      options:{
+        responsive:true,
+        plugins:{legend:{labels:{color:'#4b5563',font:{size:11}}}},
+        scales:{
+          x:{ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}},
+          y:{beginAtZero:true,ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}}
+        }
+      }
+    });
+
+    // insulin
+    const ctxI=document.getElementById('chartInsulin').getContext('2d');
+    chartInsulin=new Chart(ctxI,{
+      type:'doughnut',
+      data:{labels:['Basal','Bólus'],
+            datasets:[{data:[s.insulinBasal,s.insulinBolus],
+                       backgroundColor:['rgba(129,140,248,0.9)','rgba(248,113,113,0.9)'],
+                       borderColor:['rgba(129,140,248,1)','rgba(248,113,113,1)'],
+                       borderWidth:1}]},
+      options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#4b5563',font:{size:11}}}}}
+    });
+
+    document.getElementById('hourlySummary').innerHTML =
+      '<p>O gráfico mostra em que horas do dia a Leonor passa mais tempo em alvo (70–180 mg/dL) e em que horas há mais tendência para valores baixos ou altos.</p>';
+    if(nLabels.length){
+      document.getElementById('nightSummary').innerHTML =
+        '<p>Foram registadas hipoglicemias em algumas noites. Se forem frequentes, vale a pena discutir ajustes de basal nocturna, ceia e correções antes de deitar.</p>';
+    }else{
+      document.getElementById('nightSummary').innerHTML =
+        '<p>Nesta janela de dias não apareceram hipoglicemias registadas entre as 00h e as 06h, o que é positivo em termos de segurança nocturna.</p>';
+    }
+    document.getElementById('insulinSummary').innerHTML =
+      '<p>A relação basal/ bólus é uma pista sobre o equilíbrio do plano. Muitos esquemas usam algo entre ~40–60% de basal, mas a decisão final é sempre da equipa médica.</p>';
+
+    // painel de alarmes
+    renderAlarmsPanel();
+  }
+
+  // ===== GRÁFICOS A PARTIR DE RELATÓRIO GUARDADO =====
+  function buildChartsFromSaved(d){
+    destroyCharts();
+    const s = {
+      insulinBasal: d.insulinBasal ?? 0,
+      insulinBolus: d.insulinBolus ?? 0,
+      insulinTotal: d.insulinTotal ?? 0
+    };
+
+    // hourly
+    const ctxH=document.getElementById('chartHourly').getContext('2d');
+    const hourly = Array.isArray(d.hourlyDist) ? d.hourlyDist : null;
+    if(hourly && hourly.length===24){
+      const labels=[],tirData=[],lowData=[],highData=[];
+      for(let h=0;h<24;h++){
+        labels.push(String(h).padStart(2,'0')+'h');
+        const slot = hourly[h] || {inRangePct:0,lowPct:0,highPct:0};
+        tirData.push(slot.inRangePct || 0);
+        lowData.push(slot.lowPct || 0);
+        highData.push(slot.highPct || 0);
+      }
+      chartHourly=new Chart(ctxH,{
+        type:'line',
+        data:{
+          labels,
+          datasets:[
+            {label:'Em alvo (70–180)',data:tirData,borderColor:'rgba(34,197,94,0.9)',backgroundColor:'rgba(34,197,94,0.2)',tension:0.25},
+            {label:'Baixo (<70)',data:lowData,borderColor:'rgba(248,113,113,0.9)',backgroundColor:'rgba(248,113,113,0.15)',tension:0.25},
+            {label:'Alto (>180)',data:highData,borderColor:'rgba(59,130,246,0.9)',backgroundColor:'rgba(59,130,246,0.15)',tension:0.25}
+          ]
+        },
+        options:{
+          responsive:true,
+          plugins:{legend:{labels:{color:'#4b5563',font:{size:11}}}},
+          scales:{
+            x:{ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}},
+            y:{beginAtZero:true,max:100,ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}}
+          }
+        }
+      });
+      document.getElementById('hourlySummary').innerHTML =
+        '<p>Gráfico reconstruído a partir do relatório guardado, com distribuição horária de leituras em alvo, baixas e altas.</p>';
+    }else{
+      document.getElementById('hourlySummary').innerHTML =
+        '<p>Este relatório foi guardado sem os detalhes por hora. Para ver o gráfico horário, volta a carregar o ZIP original e guarda novamente.</p>';
+    }
+
+    // night
+    const ctxN=document.getElementById('chartNight').getContext('2d');
+    const night = Array.isArray(d.nightHypoSeries) ? d.nightHypoSeries : null;
+    if(night && night.length){
+      const nLabels=[],nData=[];
+      night.forEach(item=>{
+        nLabels.push(item.dateKey || '');
+        nData.push(item.count || 0);
+      });
+      chartNight=new Chart(ctxN,{
+        type:'bar',
+        data:{labels:nLabels,datasets:[{label:'Hipos 00h–06h',data:nData,backgroundColor:'rgba(248,113,113,0.7)'}]},
+        options:{
+          responsive:true,
+          plugins:{legend:{labels:{color:'#4b5563',font:{size:11}}}},
+          scales:{
+            x:{ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}},
+            y:{beginAtZero:true,ticks:{color:'#6b7280'},grid:{color:'#e5e7eb'}}
+          }
+        }
+      });
+      document.getElementById('nightSummary').innerHTML =
+        '<p>Gráfico reconstruído com o número de hipoglicemias entre as 00h e as 06h por dia.</p>';
+    }else{
+      document.getElementById('nightSummary').innerHTML =
+        '<p>Este relatório foi guardado sem a série detalhada de hipos nocturnas. Para ver este gráfico, volta a gerar o relatório a partir do ZIP.</p>';
+    }
+
+    // insulin
+    const ctxI=document.getElementById('chartInsulin').getContext('2d');
+    if(s.insulinBasal || s.insulinBolus){
+      chartInsulin=new Chart(ctxI,{
+        type:'doughnut',
+        data:{labels:['Basal','Bólus'],
+              datasets:[{data:[s.insulinBasal,s.insulinBolus],
+                         backgroundColor:['rgba(129,140,248,0.9)','rgba(248,113,113,0.9)'],
+                         borderColor:['rgba(129,140,248,1)','rgba(248,113,113,1)'],
+                         borderWidth:1}]},
+        options:{responsive:true,plugins:{legend:{position:'bottom',labels:{color:'#4b5563',font:{size:11}}}}}
+      });
+      document.getElementById('insulinSummary').innerHTML =
+        '<p>Gráfico de Basal vs Bólus reconstruído a partir dos valores médios guardados neste relatório.</p>';
+    }else{
+      document.getElementById('insulinSummary').innerHTML =
+        '<p>Este relatório não tinha valores de basal/bólus guardados em detalhe suficiente para desenhar o gráfico.</p>';
+    }
+
+    // alarmes
+    renderAlarmsFromSaved(d);
+  }
+
+  // ===== ALARMES – TEXTO E LISTA (dados atuais) =====
+  function renderAlarmsPanel(){
+    const summaryEl=document.getElementById('alarmsSummary');
+    const listEl=document.getElementById('alarmsList');
+    if(!summaryEl || !listEl) return;
+
+    if(!alarmsEvents.length){
+      summaryEl.innerHTML=
+        '<p>Não há registos de alarmes neste período. Isto é um bom sinal, mas mesmo sem alarmes é importante valorizar sempre sintomas da Leonor e dúvidas dos pais.</p>';
+      listEl.innerHTML='<p>Sem eventos a listar.</p>';
+      return;
+    }
+
+    const stats = computeAlarmStats();
+    const fmtDt = d=>d?d.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'2-digit'})+
+                         ' '+d.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):'–';
+
+    const top = stats.byType.slice(0,5);
+    let bullets='';
+    for(const [label,count] of top){
+      bullets += `<li><strong>${label}</strong> – ${count}x</li>`;
+    }
+    const nightPart = stats.nightAlarms
+      ? ` Destes, cerca de <strong>${stats.nightAlarms}</strong> aconteceram de noite (00h–06h).`
+      : ' Não foram detectados alarmes entre as 00h e as 06h.';
+
+    summaryEl.innerHTML = `
+      <p>Foram registados <strong>${stats.total}</strong> alarmes/eventos da bomba entre
+         <strong>${fmtDt(stats.first)}</strong> e <strong>${fmtDt(stats.last)}</strong>.</p>
+      <p>${nightPart}</p>
+      <p><strong>Tipos mais frequentes:</strong></p>
+      <ul>${bullets || '<li>Vários eventos únicos, sem um padrão dominante.</li>'}</ul>
+      <p class="small-text">Ajuda para a consulta: ver com a equipa se há alarmes repetidos (oclusão, falha de sensor, reservatório, bateria, etc.) e que ajustes aumentam a segurança.</p>
+    `;
+
+    const recent = [...alarmsEvents].slice(-15).reverse();
+    let listHtml='<ul>';
+    for(const ev of recent){
+      const dStr = fmtDt(ev.datetime);
+      listHtml += `<li><span class="time">[${dStr}]</span> – ${ev.event}</li>`;
+    }
+    listHtml+='</ul>';
+    listEl.innerHTML=listHtml;
+  }
+
+  // ===== ALARMES – TEXTO E LISTA (relatório guardado) =====
+  function renderAlarmsFromSaved(d){
+    const summaryEl=document.getElementById('alarmsSummary');
+    const listEl=document.getElementById('alarmsList');
+    if(!summaryEl || !listEl) return;
+
+    const total = (typeof d.alarmTotal === 'number') ? d.alarmTotal : 0;
+    const night = (typeof d.alarmNight === 'number') ? d.alarmNight : 0;
+    const day   = (typeof d.alarmDay === 'number')   ? d.alarmDay   : 0;
+    const byType = Array.isArray(d.alarmByType) ? d.alarmByType : [];
+
+    const fmtDtSimple = iso => iso ? iso.slice(0,10).split('-').reverse().join('-') : '–';
+    const periodFrom = d.periodFrom ? fmtDtSimple(d.periodFrom) : '–';
+    const periodTo   = d.periodTo   ? fmtDtSimple(d.periodTo)   : '–';
+
+    if(!total){
+      summaryEl.innerHTML = `
+        <p>Neste relatório guardado não há alarmes registados. Isto é habitualmente um bom sinal, mas continua a ser fundamental
+           estar atento a sintomas da Leonor e discutir qualquer dúvida com a equipa.</p>
+      `;
+      listEl.innerHTML = '<p>Sem eventos a listar neste relatório.</p>';
+      return;
+    }
+
+    let list='';
+    byType.slice(0,5).forEach(item=>{
+      list += `<li><strong>${item.label}</strong> – ${item.count}x</li>`;
+    });
+
+    const nightPart = night
+      ? `Cerca de <strong>${night}</strong> alarmes ocorreram de noite (00h–06h).`
+      : 'Não foram registados alarmes entre as 00h e as 06h.';
+
+    summaryEl.innerHTML = `
+      <p>Foram registados <strong>${total}</strong> alarmes/eventos da bomba entre
+         <strong>${periodFrom}</strong> e <strong>${periodTo}</strong>.</p>
+      <p>${nightPart}</p>
+      <p><strong>Tipos que mais se repetem:</strong></p>
+      <ul>${list || '<li>Vários eventos únicos, sem um tipo dominante.</li>'}</ul>
+      <p><strong>Ajuda para a consulta:</strong> vale a pena rever com a equipa se há padrões de oclusão, falhas de sensor,
+         problemas com o reservatório ou bateria e que cuidados/adaptações podem reduzir estes alarmes.</p>
+    `;
+
+    const sample = Array.isArray(d.alarmEventsSample) ? d.alarmEventsSample : [];
+    if(sample.length){
+      let listHtml='<ul>';
+      sample.slice().reverse().slice(0,15).forEach(ev=>{
+        const dt = ev.datetime ? new Date(ev.datetime) : null;
+        const dStr = dt
+          ? dt.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'2-digit'})+
+            ' '+dt.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})
+          : '–';
+        listHtml += `<li><span class="time">[${dStr}]</span> – ${ev.event || ''}</li>`;
+      });
+      listHtml+='</ul>';
+      listEl.innerHTML = listHtml;
+    }else{
+      listEl.innerHTML = '<p>Este relatório não guardou a lista detalhada dos últimos alarmes, apenas o resumo.</p>';
+    }
+  }
+
+  // ===== RELATÓRIO TEXTO =====
+  function buildReportText(){
+    const c=document.getElementById('reportContainer');
+    if(!c) return;
+    if(!cgmReadings.length){
+      c.innerHTML='<div class="report-section"><div class="report-title">Sem dados ainda</div><div class="report-body"><p>Carrega o ZIP da Tandem para gerar o relatório com base nos dados reais.</p></div></div>';
+      lastReportHtml = c.innerHTML;
+      return;
+    }
+    const s=computeStats();
+    const alarmStats=computeAlarmStats();
+    const fmt=d=>d?d.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'}):'–';
+    const tClass=classifyTIR(s.tir);
+    const hClass=classifyHypos(s);
+    const bClass=classifyBasalBolus(s);
+    const nightsDesc = s.nightTotalNights
+      ? s.nightHypoNights+' em '+s.nightTotalNights+' noite(s) (~'+((s.nightHypoNights/s.nightTotalNights)*100).toFixed(0)+'% das noites)'
+      : 'não há dados suficientes de noite para ver um padrão consistente';
+    const percBasal = s.insulinTotal ? ((s.insulinBasal/s.insulinTotal)*100).toFixed(0) : '–';
+
+    const fmtDt = d=>d?d.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'2-digit'})+
+                         ' '+d.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):'–';
+    let alarmHtml='';
+    if(!alarmStats.total){
+      alarmHtml = `
+        <p>Neste período não foram registados alarmes da bomba. Isto é habitualmente um bom sinal, mas continua a ser fundamental
+           estar atento a sintomas da Leonor e discutir qualquer dúvida com a equipa.</p>
+      `;
+    }else{
+      const top = alarmStats.byType.slice(0,3);
+      let list='';
+      for(const [label,count] of top){
+        list += `<li><strong>${label}</strong> – ${count}x</li>`;
+      }
+      const nightPart = alarmStats.nightAlarms
+        ? `Cerca de <strong>${alarmStats.nightAlarms}</strong> alarmes ocorreram de noite (00h–06h).`
+        : 'Não foram registados alarmes entre as 00h e as 06h.';
+      alarmHtml = `
+        <p>Foram registados <strong>${alarmStats.total}</strong> alarmes/eventos da bomba entre
+           <strong>${fmtDt(alarmStats.first)}</strong> e <strong>${fmtDt(alarmStats.last)}</strong>.</p>
+        <p>${nightPart}</p>
+        <p><strong>Tipos que mais se repetem:</strong></p>
+        <ul>${list || '<li>Vários eventos únicos, sem um tipo dominante.</li>'}</ul>
+        <p><strong>Ajuda para a consulta:</strong> vale a pena rever com a equipa se há padrões de oclusão, falhas de sensor,
+           problemas com o reservatório ou bateria e que cuidados/adaptações podem reduzir estes alarmes.</p>
+      `;
+    }
+
+    const html = `
+      <div class="report-section">
+        <div class="report-title">1. Período analisado</div>
+        <div class="report-body">
+          <p>Relatório baseado nos dados entre <strong>${fmt(s.periodFrom)}</strong> e
+             <strong>${fmt(s.periodTo)}</strong>, num total de cerca de <strong>${s.days} dia(s)</strong> com dados válidos de CGM.</p>
+        </div>
+      </div>
+      <div class="report-section">
+        <div class="report-title">2. Tempo em faixa alvo (70–180 mg/dL)</div>
+        <div class="report-body">
+          <p>Neste período, cerca de <strong>${s.tir.toFixed(0)}%</strong> das medições ficaram na faixa alvo.
+             Aproximadamente <strong>${s.tbr.toFixed(0)}%</strong> ficaram abaixo de 70 mg/dL e
+             <strong>${s.tar.toFixed(0)}%</strong> acima de 180 mg/dL.</p>
+          <p>Em resumo: <strong>${tClass.label}</strong>.</p>
+        </div>
+      </div>
+      <div class="report-section">
+        <div class="report-title">3. Hipoglicemias</div>
+        <div class="report-body">
+          <p>Foram identificados cerca de <strong>${s.hypoCount}</strong> episódios de glicemia inferior a 70 mg/dL.
+             De noite (00h–06h), o padrão foi: <strong>${nightsDesc}</strong>. Globalmente:
+             <strong>${hClass.label}</strong>.</p>
+          <p><strong>Ajuda para a consulta:</strong> rever com a equipa a ceia, a basal nocturna e as correções antes de deitar,
+             principalmente se as hipos forem frequentes ou com sintomas.</p>
+          <p><em>Nota de segurança:</em> em caso de sintomas graves (convulsões, perda de consciência, dificuldade em acordar),
+             é sempre emergência – ligar 112 e usar glucagon conforme o plano.</p>
+        </div>
+      </div>
+      <div class="report-section">
+        <div class="report-title">4. Distribuição da insulina (basal vs. bólus)</div>
+        <div class="report-body">
+          <p>A insulina total média estimada é de cerca de <strong>${s.insulinTotal ? s.insulinTotal.toFixed(1) : '–'} U/dia</strong>,
+             com aproximadamente <strong>${s.insulinBasal ? s.insulinBasal.toFixed(1) : '–'} U/dia</strong> de basal e
+             <strong>${s.insulinBolus ? s.insulinBolus.toFixed(1) : '–'} U/dia</strong> de bólus
+             (basal ~<strong>${percBasal}%</strong> do total diário).</p>
+          <p>Interpretação geral: <strong>${bClass.label}</strong>.</p>
+        </div>
+      </div>
+      <div class="report-section">
+        <div class="report-title">5. Alarmes da bomba e eventos de segurança</div>
+        <div class="report-body">
+          ${alarmHtml}
+        </div>
+      </div>
+    `;
+    c.innerHTML = html;
+    lastReportHtml = html;
+  }
+
+  // ===== FIREBASE (REPORTS) =====
+  function reportsCollection(){
+    if(!db || !firebaseReady) return null;
+    return db.collection('artifacts')
+             .doc(appId)
+             .collection('public')
+             .doc('data')
+             .collection('health_reports');
+  }
+
+  function initFirebaseReports(){
+    const statusEl = document.getElementById('firebaseStatus');
+    if(typeof firebase === 'undefined'){
+      if(statusEl) statusEl.textContent='Firebase não disponível (modo offline).';
+      return;
+    }
+    try{
+      if(!firebase.apps.length){
+        firebaseApp = firebase.initializeApp(firebaseConfig);
+      }else{
+        firebaseApp = firebase.app();
+      }
+      db = firebase.firestore();
+      auth = firebase.auth();
+      firebaseReady = true;
+      if(statusEl) statusEl.textContent='A autenticar (modo anónimo)…';
+
+      auth.signInAnonymously().catch(err=>{
+        console.error('Erro auth Firebase (relatórios):',err);
+        if(statusEl) statusEl.textContent='Falha de autenticação · análise apenas local.';
+      });
+
+      auth.onAuthStateChanged(user=>{
+        if(user){
+          if(statusEl) statusEl.textContent='Ligado à Firebase · podes guardar e rever relatórios.';
+          loadReportsHistory();
+        }
+      });
+    }catch(err){
+      console.error('Erro a iniciar Firebase (relatórios):',err);
+      if(statusEl) statusEl.textContent='Erro a iniciar Firebase.';
+    }
+  }
+
+  async function saveCurrentReportToFirebase(){
+    if(!firebaseReady || !reportsCollection()){
+      alert('A ligação à Firebase não está disponível (modo offline ou erro).');
+      return;
+    }
+    if(!cgmReadings.length){
+      alert('Carrega primeiro um ZIP para gerar o relatório.');
+      return;
+    }
+    const stats = computeStats();
+    const alarmStats = computeAlarmStats();
+    const now=new Date();
+    const col = reportsCollection();
+    const periodLabel = (stats.periodFrom && stats.periodTo)
+      ? stats.periodFrom.toISOString().slice(0,10)+'_'+stats.periodTo.toISOString().slice(0,10)
+      : now.toISOString().slice(0,10);
+
+    const hourlyDist = computeHourlyDistributionForSave();
+    const nightHypoSeries = computeNightHypoSeriesForSave();
+    const alarmSample = buildAlarmSampleForSave(20);
+
+    const docData = {
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      createdAtLocal: now.toISOString(),
+      periodFrom: stats.periodFrom ? stats.periodFrom.toISOString() : null,
+      periodTo: stats.periodTo ? stats.periodTo.toISOString() : null,
+      days: stats.days ?? null,
+      tir: stats.tir ?? null,
+      tbr: stats.tbr ?? null,
+      tar: stats.tar ?? null,
+      hypoCount: stats.hypoCount ?? null,
+      nightHypoNights: stats.nightHypoNights ?? null,
+      nightTotalNights: stats.nightTotalNights ?? null,
+      insulinBasal: stats.insulinBasal ?? null,
+      insulinBolus: stats.insulinBolus ?? null,
+      insulinTotal: stats.insulinTotal ?? null,
+      alarmTotal: alarmStats.total ?? 0,
+      alarmNight: alarmStats.nightAlarms ?? 0,
+      alarmDay: alarmStats.dayAlarms ?? 0,
+      alarmByType: (alarmStats.byType || []).slice(0,10).map(([label,count])=>({label,count})),
+      alarmEventsSample: alarmSample,
+      hourlyDist,
+      nightHypoSeries,
+      reportHtml: lastReportHtml || document.getElementById('reportContainer').innerHTML,
+      periodLabel,
+      source:'relatorios_v3'
+    };
+    try{
+      const docRef = await col.add(docData);
+      log('Relatório guardado na Firebase com id '+docRef.id);
+      alert('Relatório guardado na nuvem (Firebase).');
+      loadReportsHistory();
+    }catch(err){
+      console.error(err);
+      alert('Ocorreu um erro ao guardar na Firebase.');
+    }
+  }
+
+  async function loadReportsHistory(){
+    const col = reportsCollection();
+    if(!col) return;
+    try{
+      const snap = await col.orderBy('createdAt','desc').limit(50).get();
+      reportsCache = [];
+      snap.forEach(doc=>{
+        const d = doc.data();
+        const id = doc.id;
+        const fromStr = d.periodFrom ? d.periodFrom.slice(0,10) : '????-??-??';
+        const toStr = d.periodTo ? d.periodTo.slice(0,10) : '????-??-??';
+        const tirVal = typeof d.tir === 'number' ? d.tir.toFixed(0) : (d.tir ?? '–');
+        const label = `${fromStr} → ${toStr} · TIR ${tirVal}% · ${id.slice(-5)}`;
+        reportsCache.push({id,label,data:d});
+      });
+      populateHistorySelectors();
+    }catch(err){
+      console.error('Erro ao ler históricos:',err);
+    }
+  }
+
+  function populateHistorySelectors(){
+    const selHist=document.getElementById('selectHistory');
+    const selA=document.getElementById('selectCompareA');
+    const selB=document.getElementById('selectCompareB');
+    const selStep1=document.getElementById('selectHistoryStep1');
+    const sels=[selHist,selA,selB,selStep1];
+    sels.forEach(sel=>{
+      if(!sel) return;
+      const firstOpt = sel.firstElementChild ? sel.firstElementChild.cloneNode(true) : null;
+      sel.innerHTML='';
+      if(firstOpt) sel.appendChild(firstOpt);
+      reportsCache.forEach(r=>{
+        const opt=document.createElement('option');
+        opt.value=r.id;
+        opt.textContent=r.label;
+        sel.appendChild(opt);
+      });
+    });
+  }
+
+  function onHistoryChange(){
+    const selHist=document.getElementById('selectHistory');
+    const preview=document.getElementById('historyPreview');
+    if(!selHist || !preview) return;
+    const id=selHist.value;
+    if(!id){
+      preview.innerHTML='<p>Escolhe um relatório guardado para veres aqui o resumo.</p>';
+      return;
+    }
+    const entry = reportsCache.find(r=>r.id===id);
+    if(!entry){
+      preview.innerHTML='<p>Não encontrei os dados deste relatório.</p>';
+      return;
+    }
+    const d=entry.data;
+    const fmtDate = iso=>iso?iso.slice(0,10).split('-').reverse().join('-'):'–';
+    const tir = typeof d.tir==='number'?d.tir.toFixed(0): (d.tir ?? '–');
+    const hypo = d.hypoCount ?? '–';
+    const alarmTotal = (typeof d.alarmTotal === 'number')
+      ? d.alarmTotal
+      : (Array.isArray(d.alarmByType)?
+          d.alarmByType.reduce((acc,x)=>acc+(x.count||0),0)
+        :'–');
+    preview.innerHTML = `
+      <p><strong>Período:</strong> ${fmtDate(d.periodFrom)} a ${fmtDate(d.periodTo)} · ${d.days || '–'} dias</p>
+      <p><strong>TIR:</strong> ${tir}% · <strong>Hipos:</strong> ${hypo} · <strong>Alarmes:</strong> ${alarmTotal}</p>
+      <hr>
+      <div>${d.reportHtml || '<em>Sem texto guardado para este relatório.</em>'}</div>
+    `;
+  }
+
+  function onCompareChange(){
+    const selA=document.getElementById('selectCompareA');
+    const selB=document.getElementById('selectCompareB');
+    const box=document.getElementById('compareSummary');
+    if(!selA || !selB || !box) return;
+    const idA=selA.value;
+    const idB=selB.value;
+    if(!idA || !idB){
+      box.innerHTML='<p>Escolhe dois relatórios guardados para comparar.</p>';
+      return;
+    }
+    if(idA===idB){
+      box.innerHTML='<p>Escolhe dois relatórios diferentes 🙂.</p>';
+      return;
+    }
+    const a=reportsCache.find(r=>r.id===idA);
+    const b=reportsCache.find(r=>r.id===idB);
+    if(!a || !b){
+      box.innerHTML='<p>Não foi possível encontrar os dados seleccionados.</p>';
+      return;
+    }
+    const da=a.data, db=b.data;
+    const num=v=>typeof v==='number'?v:(v!=null?Number(v):NaN);
+    const tirA=num(da.tir), tirB=num(db.tir);
+    const hypoA=num(da.hypoCount), hypoB=num(db.hypoCount);
+    const alarmA=num(typeof da.alarmTotal==='number'
+                     ? da.alarmTotal
+                     : (Array.isArray(da.alarmByType)?da.alarmByType.reduce((acc,x)=>acc+(x.count||0),0):NaN));
+    const alarmB=num(typeof db.alarmTotal==='number'
+                     ? db.alarmTotal
+                     : (Array.isArray(db.alarmByType)?db.alarmByType.reduce((acc,x)=>acc+(x.count||0),0):NaN));
+
+    const labelFrom=d=>{
+      const f=d.periodFrom?d.periodFrom.slice(0,10):'????-??-??';
+      const t=d.periodTo?d.periodTo.slice(0,10):'????-??-??';
+      return f+' → '+t;
+    };
+
+    const tira = isNaN(tirA)?'–':tirA.toFixed(0)+'%';
+    const tirb = isNaN(tirB)?'–':tirB.toFixed(0)+'%';
+
+    let texto = `<p><strong>A:</strong> ${labelFrom(da)} (TIR ${tira})<br><strong>B:</strong> ${labelFrom(db)} (TIR ${tirb})</p>`;
+
+    if(!isNaN(tirA) && !isNaN(tirB)){
+      const diff = tirB - tirA;
+      if(Math.abs(diff)<1){
+        texto += `<p>O tempo em alvo ficou muito semelhante entre os dois períodos.</p>`;
+      }else if(diff>0){
+        texto += `<p><strong>Melhoria:</strong> o TIR aumentou cerca de ${diff.toFixed(1)} pontos percentuais no relatório B.</p>`;
+      }else{
+        texto += `<p><strong>Atenção:</strong> o TIR diminuiu cerca de ${Math.abs(diff).toFixed(1)} pontos percentuais no relatório B.</p>`;
+      }
+    }
+
+    if(!isNaN(hypoA) && !isNaN(hypoB)){
+      const diff = hypoB - hypoA;
+      if(Math.abs(diff)<1){
+        texto += `<p>O número de hipoglicemias ficou semelhante entre os dois relatórios.</p>`;
+      }else if(diff<0){
+        texto += `<p><strong>Melhoria na segurança:</strong> as hipoglicemias diminuíram de ${hypoA} para ${hypoB}.</p>`;
+      }else{
+        texto += `<p><strong>Atenção às hipos:</strong> as hipoglicemias aumentaram de ${hypoA} para ${hypoB}.</p>`;
+      }
+    }
+
+    if(!isNaN(alarmA) && !isNaN(alarmB)){
+      const diff = alarmB - alarmA;
+      if(Math.abs(diff)<1){
+        texto += `<p>Os alarmes da bomba ficaram em número semelhante.</p>`;
+      }else if(diff<0){
+        texto += `<p><strong>Menos alarmes:</strong> passaram de ${alarmA} para ${alarmB}. Pode significar uso mais estável do sistema.</p>`;
+      }else{
+        texto += `<p><strong>Mais alarmes:</strong> passaram de ${alarmA} para ${alarmB}. Vale a pena rever quais se repetem.</p>`;
+      }
+    }
+
+    texto += `<p class="small-text">Esta comparação é uma ajuda para organizar a conversa com a equipa médica (não é uma decisão clínica automática).</p>`;
+    box.innerHTML=texto;
+  }
+
+  // ===== REABRIR RELATÓRIO GUARDADO (botão do passo 1) =====
+  async function handleLoadFromFirebaseClick(){
+    if(!firebaseReady || !reportsCollection()){
+      alert('A ligação à Firebase não está disponível.');
+      return;
+    }
+    const sel = document.getElementById('selectHistoryStep1');
+    if(!sel || !sel.value){
+      alert('Escolhe primeiro um relatório guardado.');
+      return;
+    }
+    const id = sel.value;
+    let entry = reportsCache.find(r=>r.id===id);
+    if(!entry){
+      try{
+        const docSnap = await reportsCollection().doc(id).get();
+        if(docSnap.exists){
+          entry = {id,label:id,data:docSnap.data()};
+        }
+      }catch(err){
+        console.error(err);
+      }
+    }
+    if(!entry){
+      alert('Não foi possível encontrar os dados deste relatório.');
+      return;
+    }
+    const d = entry.data;
+
+    // Limpa dados actuais em memória (para não misturar)
+    cgmReadings=[]; bolusEvents=[]; alarmsEvents=[];
+    destroyCharts();
+
+    // Aplica resumo, gráficos e texto a partir do relatório guardado
+    applySummaryFromSaved(d);
+    buildChartsFromSaved(d);
+
+    if(d.reportHtml){
+      const c = document.getElementById('reportContainer');
+      if(c){
+        c.innerHTML = d.reportHtml;
+        lastReportHtml = d.reportHtml;
+      }
+    }
+
+    log('Relatório carregado da Firebase e aplicado ao ecrã.');
+  }
+
+  // ===== HANDLERS =====
+  async function handleLoadClick(){
+    const zipInput=document.getElementById('zipInput');
+    if(!zipInput || !zipInput.files || !zipInput.files.length){
+      log('Antes de analisar, escolhe um ZIP com os dados.','warn');
+      alert('Escolhe primeiro o ficheiro ZIP exportado da Tandem.');
+      return;
+    }
+    const file=zipInput.files[0];
+    log('ZIP selecionado: '+file.name);
+    cgmReadings=[]; bolusEvents=[]; alarmsEvents=[]; excelPlan=null;
+    destroyCharts(); updateSummary(); buildReportText(); renderAlarmsPanel();
+    try{
+      const buf=await file.arrayBuffer();
+      const zip=await JSZip.loadAsync(buf);
+      log('ZIP carregado. Ficheiros: '+Object.keys(zip.files).length);
+      await loadCgmFromZip(zip);
+      await loadBolusFromZip(zip);
+      await loadAlarmsFromZip(zip);
+
+      const excelInput=document.getElementById('excelInput');
+      if(excelInput && excelInput.files && excelInput.files.length){
+        await loadExcelPlan(excelInput.files[0]);
+      }
+
+      if(!cgmReadings.length){
+        log('❌ Não foram encontradas leituras CGM válidas no ficheiro.','error');
+        alert('Não foram encontradas leituras CGM válidas no ficheiro.');
+        return;
+      }
+      log('✅ Dados carregados. A construir resumo, gráficos e relatório…');
+      updateSummary();
+      buildCharts();
+      buildReportText();
+      renderAlarmsPanel();
+    }catch(err){
+      console.error(err);
+      log('Erro ao processar ZIP: '+err.message,'error');
+      alert('Ocorreu um erro ao ler o ZIP. Ver o log técnico para mais detalhes.');
+    }
+  }
+
+  function handleClear(){
+    cgmReadings=[]; bolusEvents=[]; alarmsEvents=[]; excelPlan=null;
+    lastComputedStats=null; lastAlarmStats=null; lastReportHtml='';
+    const zipInput=document.getElementById('zipInput');
+    const excelInput=document.getElementById('excelInput');
+    if(zipInput) zipInput.value='';
+    if(excelInput) excelInput.value='';
+    destroyCharts();
+    updateSummary();
+    buildReportText();
+    renderAlarmsPanel();
+    log('Ecrã limpo. Podes carregar um novo ZIP ou reabrir um relatório guardado.','info');
+  }
+
+  function handleCopyReport(){
+    const c=document.getElementById('reportContainer');
+    if(!c) return;
+    const tmp=document.createElement('div');
+    tmp.innerHTML=c.innerHTML;
+    const text=tmp.innerText;
+    navigator.clipboard.writeText(text).then(()=>{
+      alert('Relatório copiado para a área de transferência.');
+    }).catch(()=>{
+      alert('Não foi possível copiar automaticamente. Podes seleccionar o texto e copiar manualmente.');
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    const btnLoad=document.getElementById('btnLoad');
+    const btnClear=document.getElementById('btnClear');
+    const btnCopy=document.getElementById('btnCopyReport');
+    const btnLoadFromFirebase=document.getElementById('btnLoadFromFirebase');
+
+    if(btnLoad) btnLoad.addEventListener('click',handleLoadClick);
+    if(btnClear) btnClear.addEventListener('click',handleClear);
+    if(btnCopy) btnCopy.addEventListener('click',handleCopyReport);
+    if(btnLoadFromFirebase) btnLoadFromFirebase.addEventListener('click',handleLoadFromFirebaseClick);
+
+    document.querySelectorAll('.section-tab').forEach(tab=>{
+      tab.addEventListener('click',()=>{
+        const target=tab.getAttribute('data-section');
+        document.querySelectorAll('.section-tab').forEach(t=>t.classList.remove('active'));
+        tab.classList.add('active');
+        document.querySelectorAll('.section-panel').forEach(p=>{
+          if(p.id===target) p.classList.add('active');
+          else p.classList.remove('active');
+        });
+      });
+    });
+
+    // Firebase + histórico
+    initFirebaseReports();
+    const btnSave=document.getElementById('btnSaveReport');
+    if(btnSave) btnSave.addEventListener('click',saveCurrentReportToFirebase);
+    const selHist=document.getElementById('selectHistory');
+    if(selHist) selHist.addEventListener('change',onHistoryChange);
+    const selA=document.getElementById('selectCompareA');
+    const selB=document.getElementById('selectCompareB');
+    if(selA) selA.addEventListener('change',onCompareChange);
+    if(selB) selB.addEventListener('change',onCompareChange);
+
+    const preview=document.getElementById('historyPreview');
+    if(preview) preview.innerHTML='<p>Quando guardares relatórios, eles vão aparecer aqui para consulta rápida.</p>';
+    const cmp=document.getElementById('compareSummary');
+    if(cmp) cmp.innerHTML='<p>Escolhe dois relatórios guardados para veres o que melhorou e o que precisa de atenção.</p>';
+
+    renderAlarmsPanel();
+  });
+</script>
+</body>
+</html>
