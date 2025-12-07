@@ -1,0 +1,3171 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>App Leonor - Família Pro V21 (Super Agente IA)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- CONFIGURAÇÃO DO ÍCONE (APP) -->
+    <link rel="icon" type="image/png" href="Gemini_Generated_Image_f4pi7bf4pi7bf4pi-removebg-preview.png">
+    <link rel="apple-touch-icon" href="Gemini_Generated_Image_f4pi7bf4pi7bf4pi-removebg-preview.png">
+    
+    <link rel="manifest" href='data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22App%20Leonor%22%2C%22short_name%22%3A%22Leonor%22%2C%22display%22%3A%22standalone%22%2C%22start_url%22%3A%22.%22%2C%22background_color%22%3A%22%23fff1f2%22%2C%22theme_color%22%3A%22%23ec4899%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22Gemini_Generated_Image_f4pi7bf4pi7bf4pi-removebg-preview.png%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D'>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="App Leonor">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
+    
+    <meta name="theme-color" content="#ec4899">
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+
+    <!-- Fonte -->
+   
+<style>
+/* --------------------------
+   VARIÁVEIS (MODO CLARO)
+--------------------------- */
+:root {
+    --primary: #ec4899;       /* Pink 500 */
+    --primary-dark: #be185d;  /* Pink 700 */
+    --primary-light: #fce7f3; /* Pink 100 */
+    --accent: #f472b6;        /* Pink 400 */
+    --bg-body: #fff1f2;       /* Rose 50 */
+    --bg-grad-start: #fff1f2;
+    --bg-grad-end: #ffe4e6;
+    --card-bg: #ffffff;
+    --text-main: #374151;     /* Gray 700 */
+    --text-sub: #6b7280;      /* Gray 500 */
+    --border: #fbcfe8;        /* Pink 200 */
+    --shadow:
+        0 10px 25px -5px rgba(236, 72, 153, 0.15),
+        0 8px 10px -6px rgba(236, 72, 153, 0.10);
+}
+
+/* --------------------------
+   RESET BÁSICO
+--------------------------- */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Quicksand', system-ui, -apple-system, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* --------------------------
+   LAYOUT GLOBAL
+--------------------------- */
+body {
+    background: linear-gradient(135deg, var(--bg-grad-start) 0%, var(--bg-grad-end) 100%);
+    color: var(--text-main);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 480px;
+    padding: 16px;
+    padding-bottom: 50px;
+    position: relative;
+}
+
+#localModeAlert {
+    background: #d97706;
+    color: white;
+    text-align: center;
+    font-size: 12px;
+    padding: 8px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    display: none;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+}
+
+/* --------------------------
+   TOGGLE DE TEMA
+--------------------------- */
+.theme-toggle-btn {
+    border: none;
+    border-radius: 999px;
+    padding: 6px 8px;
+    font-size: 14px;
+    cursor: pointer;
+    background: rgba(255,255,255,0.2);
+    color: #fef2f2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.theme-toggle-btn:active {
+    transform: scale(0.95);
+}
+
+/* --------------------------
+   CARTÕES / HEADER
+--------------------------- */
+.card {
+    background: var(--card-bg);
+    border-radius: 18px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    margin-bottom: 12px;
+}
+
+.card.app-header {
+    background: linear-gradient(135deg, #ec4899, #db2777);
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.7);
+    box-shadow: 0 10px 30px rgba(219, 39, 119, 0.45);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.title {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.subtitle {
+    font-size: 12px;
+    color: rgba(255,255,255,0.85);
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* --------------------------
+   BADGE DE ESTADO
+--------------------------- */
+.status-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.75);
+    color: #e5e7eb;
+    font-weight: 700;
+    border: 1px solid transparent;
+}
+.status-badge.online {
+    background: #ecfdf5;
+    color: #16a34a;
+    border-color: #4ade80;
+}
+.status-badge.offline {
+    background: #fef2f2;
+    color: #b91c1c;
+    border-color: #fecaca;
+}
+
+/* --------------------------
+   TOGGLE LEONOR / PAIS
+--------------------------- */
+.role-toggle {
+    font-size: 11px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 999px;
+    padding: 4px;
+    display: inline-flex;
+    gap: 4px;
+    border: 1px solid rgba(248, 187, 208, 0.9);
+    backdrop-filter: blur(6px);
+}
+
+.role-btn {
+    border: none;
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    background: transparent;
+    color: #fee2e2;
+}
+
+.role-btn.active {
+    background: #ffffff;
+    color: var(--primary-dark);
+    font-weight: 600;
+}
+
+/* --------------------------
+   ECRÃS / NAVEGAÇÃO
+--------------------------- */
+.screen {
+    display: none;
+    margin-top: 10px;
+    animation: fadeIn 0.3s ease;
+}
+.screen.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.back-btn {
+    margin-top: 12px;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    border: 1px solid var(--border);
+}
+
+/* --------------------------
+   GRID DE BOTÕES
+--------------------------- */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.btn-tile {
+    background: linear-gradient(to bottom right, #ffffff, #ffe4f1);
+    border-radius: 16px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 90px;
+    cursor: pointer;
+    transition:
+        transform 0.08s ease,
+        box-shadow 0.15s ease,
+        border-color 0.15s ease;
+    box-shadow: 0 2px 8px rgba(236, 72, 153, 0.12);
+}
+.btn-tile:active {
+    transform: scale(0.98);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    border-color: var(--accent);
+}
+
+.btn-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-desc {
+    font-size: 12px;
+    color: var(--text-sub);
+}
+
+.lock-badge {
+    margin-top: 6px;
+    font-size: 10px;
+    color: var(--primary-dark);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--primary-light);
+    border-radius: 999px;
+    padding: 2px 8px;
+    border: 1px solid var(--border);
+}
+
+/* --------------------------
+   CANETA / CALCULADORA
+--------------------------- */
+#canetaApp header {
+    background: linear-gradient(135deg, #ec4899, #db2777);
+    color: #fffdfd;
+    padding: 12px 16px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 6px 18px rgba(236,72,153,0.35);
+}
+#canetaApp h1 {
+    font-size: 18px;
+    margin: 0;
+}
+
+#canetaApp .card-calc {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 10px;
+    color: var(--text-main);
+    border: 1px solid var(--border);
+}
+
+#canetaApp label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 14px;
+    color: var(--primary-dark);
+    font-weight: 600;
+}
+
+#canetaApp input,
+#canetaApp textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 16px;
+    margin-bottom: 10px;
+    background: #ffffff;
+    color: var(--text-main);
+}
+
+#canetaApp .linha {
+    display: flex;
+    gap: 10px;
+}
+#canetaApp .linha > div {
+    flex: 1;
+}
+
+.btn-secundario {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--primary-dark);
+    border: 1px solid var(--border);
+    cursor: pointer;
+}
+
+.btn-calc {
+    background: linear-gradient(135deg, #ec4899, #db2777);
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 99px;
+    width: 100%;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+    box-shadow: 0 4px 14px rgba(236,72,153,0.5);
+}
+
+.resultado {
+    margin-top: 14px;
+    padding: 10px;
+    border-radius: 8px;
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    border: 1px solid var(--border);
+    font-size: 15px;
+}
+
+/* Tabela Plano */
+table.plano-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8px;
+    font-size: 12px;
+}
+table.plano-table th {
+    background: #ffe4e6;
+    padding: 6px;
+    border: 1px solid #fecdd3;
+    font-weight: 600;
+    color: #881337;
+}
+table.plano-table td {
+    padding: 4px;
+    border: 1px solid #fecdd3;
+    text-align: center;
+}
+.plan-actions-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 12px;
+    margin: 0 2px;
+}
+.plan-actions-btn.edit { color: #db2777; }
+.plan-actions-btn.del  { color: #b91c1c; }
+
+.plan-edit-form {
+    font-size: 13px;
+    text-align: left;
+}
+.plan-edit-form label {
+    display: block;
+    margin: 6px 0 3px;
+    font-weight: 600;
+    color: var(--primary-dark);
+}
+.plan-edit-form input {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 14px;
+    margin-bottom: 4px;
+    background: #ffffff;
+    color: var(--text-main);
+}
+.plan-edit-row {
+    display: flex;
+    gap: 8px;
+}
+.plan-edit-row > div {
+    flex: 1;
+}
+
+/* --------------------------
+   ALIMENTAÇÃO (REGRA DE 3)
+--------------------------- */
+.r3-card {
+    background: var(--card-bg);
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    padding: 12px;
+    margin-bottom: 10px;
+}
+
+.r3-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 4px;
+}
+
+.r3-input {
+    width: 100%;
+    font-size: 26px;
+    padding: 4px;
+    text-align: center;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.r3-result {
+    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+    border-radius: 18px;
+    padding: 14px;
+    margin-top: 14px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(236,72,153,0.4);
+}
+.r3-result-number {
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1.1;
+    color: #ffffff;
+}
+
+.r3-reset {
+    margin-top: 16px;
+    background: rgba(255,255,255,0.7);
+    border: 2px solid var(--accent);
+    padding: 8px 18px;
+    border-radius: 999px;
+    color: var(--primary-dark);
+    font-weight: 600;
+    width: 100%;
+    cursor: pointer;
+}
+
+/* --------------------------
+   MEDICINA (IMAGENS)
+--------------------------- */
+.med-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.med-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 8px;
+}
+
+.med-img-box {
+    width: 100%;
+    height: 120px;
+    background: #fff1f2;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+}
+
+.med-img-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.med-placeholder {
+    font-size: 10px;
+    color: var(--text-sub);
+    text-align: center;
+    padding: 4px;
+}
+
+.med-btn-row {
+    display: flex;
+    gap: 5px;
+    margin-top: 6px;
+}
+
+.med-btn {
+    flex: 1;
+    font-size: 11px;
+    padding: 4px;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+}
+.btn-view  { background: #059669; }
+.btn-clear { background: #db2777; }
+
+.med-loading {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    z-index: 10;
+    border-radius: 8px;
+}
+
+/* --------------------------
+   DESPENSA
+--------------------------- */
+.card-despensa {
+    background: var(--card-bg);
+    color: var(--text-main);
+    border-radius: 12px;
+    padding: 10px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    border: 1px solid #e5e7eb;
+}
+
+.card-despensa.low {
+    border: 2px solid #ef4444;
+    background: #fef2f2;
+}
+
+.row-stock {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+    font-size: 13px;
+}
+
+.counter-grp {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f3f4f6;
+    padding: 2px 8px;
+    border-radius: 99px;
+}
+
+.counter-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: white;
+    font-weight: bold;
+    color: var(--primary-dark);
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.btn-trash {
+    background: #fee2e2;
+    color: #991b1b;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 10px;
+    margin-top: 6px;
+    width: 100%;
+    cursor: pointer;
+}
+
+/* --------------------------
+   CALENDÁRIO & MANUTENÇÃO (NOVOS ESTILOS)
+--------------------------- */
+.calendar-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.calendar-date-box {
+    text-align: center;
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-weight: bold;
+    min-width: 60px;
+}
+.calendar-info {
+    flex: 1;
+    margin-left: 10px;
+}
+.calendar-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+.calendar-countdown {
+    font-size: 12px;
+    color: var(--text-sub);
+    margin-top: 2px;
+}
+.maintenance-card {
+    background: #fff;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+    text-align: center;
+    position: relative;
+}
+.maintenance-card.warning {
+    border-color: #ef4444;
+    background: #fef2f2;
+}
+.maintenance-card.ok {
+    border-color: #10b981;
+    background: #ecfdf5;
+}
+.m-title {
+    font-size: 16px;
+    font-weight: 800;
+    margin-bottom: 6px;
+    display: block;
+}
+.m-dates {
+    font-size: 12px;
+    color: #555;
+    margin-bottom: 10px;
+}
+.m-days-left {
+    font-size: 24px;
+    font-weight: 900;
+    color: var(--primary-dark);
+}
+.maintenance-card.warning .m-days-left { color: #b91c1c; }
+.maintenance-card.ok .m-days-left { color: #047857; }
+
+
+/* --------------------------
+   TOAST
+--------------------------- */
+#syncToast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #059669;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 9999;
+}
+
+/* --------------------------
+   DEFINIÇÕES / PIN
+--------------------------- */
+.pin-wrapper {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+.pin-wrapper input {
+    flex: 1;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff1f2;
+    color: var(--text-main);
+}
+.pin-wrapper button {
+    padding: 8px 16px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: var(--text-main);
+}
+.toggle-row input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+}
+
+/* --------------------------
+   MODAL / RESUMOS / IMAGEM
+--------------------------- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.75);
+    z-index: 2000;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    padding: 16px;
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 400px;
+    max-height: 80vh;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    text-align: left;
+    box-shadow: var(--shadow);
+}
+
+/* Área de scroll/zoom de imagem */
+#imgScrollContainer {
+    width: 100%;
+    height: 70vh;
+    overflow: auto;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    background: #000;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    position: relative;
+}
+.full-img {
+    max-width: 100%;
+    object-fit: contain;
+    transition: width 0.2s ease;
+}
+
+.zoom-controls {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 15px;
+    background: rgba(0,0,0,0.5);
+    padding: 8px;
+    border-radius: 99px;
+    border: 1px solid #fb7185;
+}
+
+.btn-zoom {
+    background: #db2777;
+    color: white;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 20px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+.btn-zoom:active {
+    transform: scale(0.9);
+}
+
+.close-modal {
+    margin-top: 15px;
+    background: var(--primary-dark);
+    color: white;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 99px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+/* --------------------------
+   RESUMOS / TEXTOS
+--------------------------- */
+.summary-line {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+    font-size: 14px;
+    text-align: left;
+}
+.summary-line:last-child {
+    border-bottom: none;
+}
+.summary-vals {
+    font-weight: 700;
+    color: var(--primary-dark);
+}
+
+.section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--primary-dark);
+    margin-bottom: 8px;
+}
+.section-text {
+    font-size: 13px;
+    color: var(--text-sub);
+    margin-bottom: 8px;
+}
+
+/* --------------------------
+   CHAT GPT & AI (NOVO)
+--------------------------- */
+#chatContainer {
+    display: flex;
+    flex-direction: column;
+    height: 60vh;
+}
+#chatMessages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 12px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+    font-size: 14px;
+}
+.chat-msg {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    max-width: 85%;
+    line-height: 1.4;
+}
+.chat-msg.user {
+    background: var(--primary);
+    color: white;
+    align-self: flex-end;
+    margin-left: auto;
+    border-bottom-right-radius: 2px;
+}
+.chat-msg.bot {
+    background: white;
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    align-self: flex-start;
+    border-bottom-left-radius: 2px;
+}
+.chat-input-area {
+    display: flex;
+    gap: 8px;
+}
+.chat-input-area input {
+    flex: 1;
+    border-radius: 99px;
+    padding: 10px 15px;
+    border: 1px solid var(--border);
+    margin-bottom: 0 !important; /* Override */
+}
+.btn-camera-ai {
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(109, 40, 217, 0.3);
+}
+
+/* ======================================================
+   MODO ESCURO — ASPETO DO indexV1
+   (apenas overrides para quando body.tem .dark-mode)
+====================================================== */
+
+/* Palete base do modo escuro */
+body.dark-mode {
+    --primary: #ec4899;
+    --primary-dark: #be185d;
+    --primary-light: #3b0d3f;
+    --accent: #f472b6;
+    --bg-body: #170015;
+    --bg-grad-start: #170015;
+    --bg-grad-end: #170015;
+    --card-bg: #240021;
+    --text-main: #fdf2f8;
+    --text-sub: #fbcfe8;
+    --border: rgba(244,114,182,0.4);
+    --shadow:
+        0 10px 30px rgba(131,24,67,0.7),
+        0 8px 16px rgba(0,0,0,0.6);
+    background: #170015;
+    color: #fdf2f8;
+}
+
+/* Botão de tema escuro */
+body.dark-mode .theme-toggle-btn {
+    background: rgba(15,23,42,0.8);
+    color: #f9a8d4;
+}
+
+/* Cartões / header com look indexV1 */
+body.dark-mode .card {
+    background: #240021;
+    border-color: rgba(244,114,182,0.4);
+    box-shadow: 0 10px 30px rgba(131,24,67,0.7);
+}
+
+body.dark-mode .card.app-header {
+    background: #240021;
+    border-color: rgba(244,114,182,0.4);
+    box-shadow: 0 10px 30px rgba(131,24,67,0.7);
+    color: #fdf2f8;
+}
+body.dark-mode .subtitle {
+    color: #f9a8d4;
+}
+
+/* Badge de estado igual ao indexV1 */
+body.dark-mode .status-badge {
+    background: #374151;
+    color: #d1d5db;
+    border-color: transparent;
+}
+body.dark-mode .status-badge.online {
+    background: #065f46;
+    color: #6ee7b7;
+    border-color: #34d399;
+}
+body.dark-mode .status-badge.offline {
+    background: #7f1d1d;
+    color: #fca5a5;
+    border-color: #ef4444;
+}
+
+/* Toggle Leonor / Pais estilo indexV1 */
+body.dark-mode .role-toggle {
+    background: #3b0d3f;
+    border-color: #fb7185;
+}
+body.dark-mode .role-btn {
+    color: #fecdd3;
+}
+body.dark-mode .role-btn.active {
+    background: #ec4899;
+    color: #330014;
+}
+
+/* Tiles do menu principal */
+body.dark-mode .btn-tile {
+    background: #2b021f;
+    border-color: rgba(248,187,208,0.6);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+}
+body.dark-mode .btn-tile:active {
+    background: #3f0b2f;
+}
+body.dark-mode .btn-title {
+    color: #fdf2f8;
+}
+body.dark-mode .btn-desc {
+    color: #fecdd3;
+}
+body.dark-mode .lock-badge {
+    color: #fed7aa;
+    background: rgba(251,191,36,0.08);
+    border-color: rgba(251,191,36,0.25);
+}
+
+/* Botão voltar */
+body.dark-mode .back-btn {
+    background: #4a044e;
+    color: #fee2e2;
+    border-color: #fb7185;
+}
+
+/* Caneta – header & cartão igual indexV1 */
+body.dark-mode #canetaApp header {
+    background: #9d174d;
+    color: #fff0f6;
+}
+body.dark-mode #canetaApp .card-calc {
+    background: #fff1f2;
+    color: #4a044e;
+    border-color: #fecdd3;
+}
+body.dark-mode #canetaApp label {
+    color: #881337;
+}
+body.dark-mode #canetaApp input,
+body.dark-mode #canetaApp textarea {
+    background: #fff7fb;
+    color: #333333;
+    border-color: #fecdd3;
+}
+body.dark-mode .btn-secundario {
+    background: #be185d;
+    color: #ffffff;
+    border-color: #fb7185;
+}
+
+/* Regra de 3 com o look escuro */
+body.dark-mode .r3-card {
+    background: #2b021f;
+    border-color: #fb7185;
+}
+body.dark-mode .r3-label {
+    color: #ffe4e6;
+}
+body.dark-mode .r3-input {
+    color: #f472b6;
+}
+body.dark-mode .r3-result {
+    background: linear-gradient(135deg, #be185d 0%, #db2777 100%);
+    box-shadow: 0 4px 15px rgba(236,72,153,0.35);
+}
+body.dark-mode .r3-reset {
+    background: transparent;
+    border-color: #f472b6;
+    color: #f472b6;
+}
+
+/* Medicina com cartões escuros */
+body.dark-mode .med-card {
+    background: #2b021f;
+    border-color: #fb7185;
+}
+body.dark-mode .med-img-box {
+    background: #220015;
+    border-color: #fb7185;
+}
+body.dark-mode .med-placeholder {
+    color: #fbcfe8;
+}
+
+/* Despensa: tal como no indexV1, cartões brancos mesmo em escuro */
+body.dark-mode .card-despensa {
+    background: #ffffff;
+    color: #333333;
+    border-radius: 12px;
+    padding: 10px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+}
+body.dark-mode .card-despensa.low {
+    border: 2px solid #ef4444;
+    background: #fef2f2;
+}
+body.dark-mode .counter-grp {
+    background: #f3f4f6;
+}
+body.dark-mode .counter-btn {
+    background: #ffffff;
+    color: #be185d;
+}
+body.dark-mode .btn-trash {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* Definições */
+body.dark-mode .pin-wrapper input {
+    border-color: #fb7185;
+    background: #3b0d3f;
+    color: #ffffff;
+}
+body.dark-mode .pin-wrapper button {
+    background: #db2777;
+}
+body.dark-mode .toggle-row {
+    color: #fbcfe8;
+}
+body.dark-mode .toggle-row input {
+    accent-color: #db2777;
+}
+
+/* Calendário Modo Escuro */
+body.dark-mode .calendar-card {
+    background: #2b021f;
+    border-color: #fb7185;
+}
+body.dark-mode .calendar-date-box {
+    background: #3b0d3f;
+    color: #fecdd3;
+}
+body.dark-mode .calendar-title {
+    color: #fdf2f8;
+}
+body.dark-mode .calendar-countdown {
+    color: #fbcfe8;
+}
+body.dark-mode .maintenance-card {
+    background: #240021;
+    border-color: #fb7185;
+}
+body.dark-mode .maintenance-card.warning {
+    border-color: #ef4444;
+    background: #450a0a;
+}
+body.dark-mode .maintenance-card.ok {
+    border-color: #10b981;
+    background: #064e3b;
+}
+body.dark-mode .m-title {
+    color: #fdf2f8;
+}
+body.dark-mode .m-dates {
+    color: #fbcfe8;
+}
+body.dark-mode .m-days-left {
+    color: #fff;
+}
+
+
+/* Modal / Resumos com look indexV1 */
+body.dark-mode .modal-overlay {
+    background: rgba(0,0,0,0.9);
+}
+body.dark-mode .modal-content {
+    background: #240021;
+    border-color: #fb7185;
+    color: #ffffff;
+    text-align: center;
+}
+body.dark-mode .summary-line {
+    border-bottom: 1px solid rgba(251, 207, 232, 0.2);
+}
+body.dark-mode .summary-vals {
+    color: #fbcfe8;
+}
+body.dark-mode .section-title {
+    color: #fbcfe8;
+}
+body.dark-mode .close-modal {
+    background: #be185d;
+}
+
+/* Chat e AI escuro */
+body.dark-mode #chatMessages {
+    background: rgba(0,0,0,0.2);
+    border-color: #be185d;
+    color: #fff;
+}
+body.dark-mode .chat-msg.bot {
+    background: #3b0d3f;
+    color: #fff;
+    border-color: #831843;
+}
+body.dark-mode .chat-input-area input {
+    background: #2b021f;
+    color: white;
+    border-color: #831843;
+}
+
+/* Estilos Jogo / Quiz */
+.quiz-container {
+    padding: 10px;
+}
+.quiz-option-btn {
+    width: 100%;
+    padding: 14px;
+    margin-bottom: 10px;
+    background: #ffffff;
+    border: 2px solid #f9a8d4;
+    color: #831843;
+    text-align: left;
+    border-radius: 12px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 600;
+}
+.quiz-option-btn:active {
+    transform: scale(0.98);
+}
+.quiz-option-btn.correct {
+    background: #ecfdf5;
+    border-color: #10b981;
+    color: #065f46;
+}
+.quiz-option-btn.wrong {
+    background: #fef2f2;
+    border-color: #ef4444;
+    color: #b91c1c;
+}
+.quiz-feedback {
+    margin: 15px 0;
+    padding: 15px;
+    border-radius: 12px;
+    font-size: 14px;
+    display: none;
+    animation: fadeIn 0.3s;
+}
+.quiz-feedback.correct {
+    background: #ecfdf5;
+    border: 1px solid #10b981;
+    color: #064e3b;
+}
+.quiz-feedback.wrong {
+    background: #fef2f2;
+    border: 1px solid #ef4444;
+    color: #991b1b;
+}
+.quiz-next-btn {
+    background: var(--primary);
+    color: white;
+    padding: 12px;
+    border-radius: 99px;
+    width: 100%;
+    border: none;
+    font-weight: bold;
+    margin-top: 10px;
+    cursor: pointer;
+    display: none;
+}
+</style>
+
+
+</head>
+<body>
+
+<div id="syncToast">☁️ Sincronizado!</div>
+
+<!-- MODAL UNIVERSAL -->
+<div id="universalModal" class="modal-overlay">
+    <div id="modalContentBox" class="modal-content" style="display:none;">
+        <h3 id="modalTitle" style="margin-bottom:15px; color:var(--primary-dark); text-align:center;"></h3>
+        <div id="modalBody"></div>
+        <button class="close-modal" onclick="closeModal()">Fechar</button>
+    </div>
+    
+    <div id="modalImageBox" style="display:none; text-align:center; width:100%; max-width: 600px;">
+        <div class="zoom-controls">
+            <button class="btn-zoom" onclick="zoomOut()">-</button>
+            <span style="display:flex;align-items:center;color:white;font-size:12px">ZOOM</span>
+            <button class="btn-zoom" onclick="zoomIn()">+</button>
+        </div>
+        <div id="imgScrollContainer">
+            <img id="modalFullImg" class="full-img">
+        </div>
+        <button class="close-modal" onclick="closeModal()">Fechar</button>
+    </div>
+</div>
+
+<div class="app-container">
+    
+    <div id="localModeAlert">
+        📱 Sem internet. A app pode mostrar dados em cache.
+    </div>
+
+    <div class="card app-header">
+        <div class="header">
+    <div>
+        <div class="title">App Nonô 💗</div>
+        <div class="subtitle">
+            <span id="connBadge" class="status-badge">A ligar...</span>
+        </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+        <!-- Botão de tema -->
+        <button id="themeToggleBtn" class="theme-toggle-btn" onclick="toggleTheme()" title="Mudar tema">
+            🌙
+        </button>
+
+        <!-- Troca Leonor / Pais -->
+        <div class="role-toggle">
+            <button class="role-btn active" id="btnLeonor" onclick="setRole('leonor')">Sou a Nonô</button>
+            <button class="role-btn" id="btnAdulto" onclick="setRole('adulto')">Sou Pai/Mãe</button>
+        </div>
+    </div>
+</div>
+
+
+        <!-- MENU PRINCIPAL -->
+        <div class="screen active" id="homeScreen">
+            <div class="grid">
+                <div class="btn-tile" data-app="caneta" onclick="openScreen('canetaScreen')">
+                    <div>
+                        <div class="btn-title">Caneta 💉</div>
+                        <div class="btn-desc">Calculadora & Plano</div>
+                    </div>
+                </div>
+
+                <div class="btn-tile" data-app="alimentacao" onclick="openScreen('alimentacaoScreen')">
+                    <div>
+                        <div class="btn-title">Alimentação 🍽️</div>
+                        <div class="btn-desc">Regra de 3 simples</div>
+                    </div>
+                </div>
+
+                <div class="btn-tile" data-app="despensa" onclick="openLockedArea('despensaScreen')">
+                    <div>
+                        <div class="btn-title">Despensa 🧃</div>
+                        <div class="btn-desc">Stock em tempo real</div>
+                    </div>
+                    <div class="lock-badge">🔒 Família</div>
+                </div>
+
+                <div class="btn-tile" data-app="medicina" onclick="openScreen('medicinaScreen')">
+                    <div>
+                        <div class="btn-title">Medicina 🧬</div>
+                        <div class="btn-desc">Imagens</div>
+                    </div>
+                </div>
+                
+                <div class="btn-tile" data-app="calendario" onclick="openScreen('calendarioScreen')">
+                    <div>
+                        <div class="btn-title">Calendário 📅</div>
+                        <div class="btn-desc">Consultas & Bomba</div>
+                    </div>
+                </div>
+
+                <div class="btn-tile" data-app="jogo" onclick="openScreen('jogoScreen')">
+                    <div>
+                        <div class="btn-title">Jogo 🎮</div>
+                        <div class="btn-desc">Quiz da Nôno</div>
+                    </div>
+                </div>
+
+                <div class="btn-tile" data-app="relatorios" onclick="openLockedArea('relatoriosScreen')">
+                    <div>
+                        <div class="btn-title">Relatórios 📈</div>
+                        <div class="btn-desc">CGM + Bólus + Alarmes</div>
+                    </div>
+                    <div class="lock-badge">🔒 Família</div>
+                </div>
+
+                <!-- ASSISTENTE IA (INTERNO) -->
+                <div class="btn-tile" data-app="ai" onclick="openScreen('aiScreen')">
+                    <div>
+                        <div class="btn-title">
+                            Assistente Leonor 🤖 <span id="aiStatusDot" style="display:none; color:#10b981; font-size:10px;">●</span>
+                        </div>
+                        <div class="btn-desc">Chat & Contagem HC</div>
+                    </div>
+                </div>
+
+                <!-- NOVO: ATALHO CHATGPT (LINK EXTERNO) -->
+                <a href="https://chatgpt.com/" target="_blank" style="text-decoration:none;" data-app="link_chatgpt">
+                    <div class="btn-tile">
+                        <div>
+                            <div class="btn-title" style="color:#10a37f;">ChatGPT 🧠</div>
+                            <div class="btn-desc">Abrir App Oficial</div>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- NOVO: ATALHO GEMINI (LINK EXTERNO) -->
+                <a href="https://gemini.google.com/" target="_blank" style="text-decoration:none;" data-app="link_gemini">
+                    <div class="btn-tile">
+                        <div>
+                            <div class="btn-title" style="color:#4E81FF;">Gemini ✨</div>
+                            <div class="btn-desc">Abrir App Oficial</div>
+                        </div>
+                    </div>
+                </a>
+
+                <div class="btn-tile" data-app="resumo" onclick="showGlobalSummary()">
+                    <div>
+                        <div class="btn-title">Resumo 📋</div>
+                        <div class="btn-desc">Relatório + Despensa</div>
+                    </div>
+                </div>
+
+                <div class="btn-tile" data-app="definicoes" onclick="openLockedArea('definicoesScreen')">
+                    <div>
+                        <div class="btn-title">Definições ⚙️</div>
+                        <div class="btn-desc">PIN, Apps & Consultas</div>
+                    </div>
+                    <div class="lock-badge">🔒 Pais</div>
+                </div>
+            </div>
+            <div style="text-align:center; font-size:10px; color:rgba(255,255,255,0.9); margin-top:20px;">
+                Versão Família Pro V21 (Layout Pink) • Super Agente IA
+            </div>
+        </div>
+
+        <!-- CALCULADORA -->
+        <div class="screen" id="canetaScreen">
+            <button class="back-btn" onclick="goHome()">← Voltar</button>
+            
+            <div id="canetaApp">
+                <header>
+                    <h1>Calculadora 🦄</h1>
+                    <button class="btn-secundario" onclick="togglePlano()">Ver Plano</button>
+                </header>
+
+                <div class="card-calc" id="calcArea">
+                    <h2 style="font-size:16px; margin-top:0; color:#831843;">Dados da Refeição</h2>
+                    <div class="linha">
+                        <div><label>Hora</label><input type="time" id="calcTime"></div>
+                        <div style="display:flex; align-items:flex-end; padding-bottom:10px;"><button class="btn-secundario" onclick="setCurrentTime()">Agora</button></div>
+                    </div>
+                    <div class="linha">
+                        <div><label>Glicemia</label><input type="number" id="calcBg" placeholder="mg/dL"></div>
+                        <div><label>Hidratos</label><input type="number" id="calcCarbs" placeholder="g"></div>
+                    </div>
+                    <label>Insulina a Bordo (IOB)</label><input type="number" id="calcIob" placeholder="0.0" step="0.1">
+                    <label style="display:flex; align-items:center; gap:8px; margin:10px 0;">
+                        <input type="checkbox" id="calcCorrection" checked style="width:auto; margin:0;">
+                        Incluir correção (FSI/Alvo)
+                    </label>
+                    <div style="background:#fce7f3; padding:8px; border-radius:8px; margin-bottom:10px;">
+                        <label style="font-size:12px; margin-bottom:4px;">Modo de Cálculo:</label>
+                        <div style="display:flex; gap:15px;">
+                            <label style="font-weight:400; font-size:13px; display:flex; align-items:center; gap:4px;">
+                                <input type="radio" name="calcMode" value="plano" checked style="width:auto; margin:0;"> Usar Plano (Auto)
+                            </label>
+                            <label style="font-weight:400; font-size:13px; display:flex; align-items:center; gap:4px;">
+                                <input type="radio" name="calcMode" value="simples" style="width:auto; margin:0;"> Simples (Manual)
+                            </label>
+                        </div>
+                        <div id="manualFields" style="display:none; margin-top:8px; border-top:1px solid #f9a8d4; padding-top:8px;">
+                            <div class="linha">
+                                <input type="number" id="manualRatio" placeholder="Rácio">
+                                <input type="number" id="manualFsi" placeholder="FSI">
+                            </div>
+                            <input type="number" id="manualTarget" placeholder="Alvo">
+                        </div>
+                    </div>
+                    <button class="btn-calc" onclick="calculateInsulin()">CALCULAR DOSE</button>
+                    <div id="calcResult" class="resultado" style="display:none;"></div>
+                </div>
+
+                <div class="card-calc" id="planoArea" style="display:none; border:2px solid #db2777;">
+                    <h2 style="font-size:16px; margin-top:0; color:#831843;">Plano de Tratamento (Cloud) ☁️</h2>
+                    <table class="plano-table">
+                        <thead>
+                            <tr>
+                                <th>Início</th>
+                                <th>Fim</th>
+                                <th>I:H</th>
+                                <th>FSI</th>
+                                <th>Alvo</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="planoBody"></tbody>
+                    </table>
+                    <button class="btn-secundario" onclick="addPlanoRow()">+ Faixa</button>
+                    <label style="margin-top:10px;">Notas Médicas</label>
+                    <textarea id="planoNotes" rows="3"></textarea>
+                    <button class="btn-calc" style="background:#831843; margin-top:10px;" onclick="savePlanoToCloud()">GUARDAR</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ALIMENTAÇÃO -->
+        <div class="screen" id="alimentacaoScreen" style="text-align:center;">
+            <button class="back-btn" onclick="goHome()">← Voltar</button>
+            
+            <h1 style="font-size: 24px; color: var(--primary-dark); margin: 10px 0 5px;">Olá Leonor! 🧁</h1>
+            <h2 class="section-title" style="text-align: center;">Regra de 3 Simples 🍽️</h2>
+            
+            <div class="r3-card">
+                <span class="r3-label">🏷️ Rótulo (por 100g)</span>
+                <div style="font-size: 11px; color: var(--text-sub); margin-bottom: 8px; line-height: 1.2;">(É o valor dos Hidratos de Carbono que está escrito no pacote)</div>
+                <input type="number" id="r3_hc" class="r3-input" placeholder="0" oninput="calcR3()">
+            </div>
+            
+            <div class="r3-card">
+                <span class="r3-label">⚖️ Peso no prato (g)</span>
+                <div style="font-size: 11px; color: var(--text-sub); margin-bottom: 8px; line-height: 1.2;">(É o peso da comida que vais comer agora)</div>
+                <input type="number" id="r3_peso" class="r3-input" placeholder="0" oninput="calcR3()">
+            </div>
+            
+            <div class="r3-result">
+                <div style="font-size: 20px; font-weight: 800; color: white; margin-bottom: 5px;">Na Bomba:</div>
+                <span class="r3-label" style="color:white; opacity:0.9; font-weight: normal;">Total Hidratos</span>
+                <div class="r3-result-number">
+                    <span id="r3_res">0</span>
+                    <span style="font-size:18px;">g</span>
+                </div>
+            </div>
+            
+            <button class="r3-reset" onclick="resetR3()">Limpar ✨</button>
+        </div>
+
+        <!-- DESPENSA -->
+        <div class="screen" id="despensaScreen">
+            <button class="back-btn" onclick="goHome()">← Voltar</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h2 class="section-title" style="margin:0">Despensa 🧃</h2>
+                <button class="btn-secundario" onclick="showStockSummary()">📄 Resumo</button>
+            </div>
+            
+            <div id="despensaList">
+                <div style="text-align:center; padding:20px; color:var(--text-sub);">
+                    A carregar dados...
+                </div>
+            </div>
+            <div class="card" style="margin-top:10px;">
+                <h3 style="font-size:14px; margin-bottom:8px;">Novo Item</h3>
+                <div class="pin-wrapper">
+                    <input type="text" id="newItemName" placeholder="Ex: Lancetas">
+                    <button onclick="addInventoryItem()">+</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MEDICINA -->
+        <div class="screen" id="medicinaScreen">
+            <button class="back-btn" onclick="goHome()">← Voltar</button>
+            <h2 class="section-title">Medicina 🧬</h2>
+            <p class="section-text">Podes carregar fotos grandes. A app ajusta automaticamente.</p>
+            <div class="med-grid">
+                <div class="med-card">
+                    <div class="med-img-box" onclick="triggerFile(1)">
+                        <img id="medImg1" style="display:none;">
+                        <div id="medTxt1" class="med-placeholder">Toque para adicionar</div>
+                        <div id="medLoad1" class="med-loading">
+                            <span>A comprimir...</span>
+                            <span style="font-size:9px">(Pode demorar um pouco)</span>
+                        </div>
+                    </div>
+                    <div class="med-btn-row">
+                        <button class="med-btn btn-view" onclick="showFullImage(1)">Ver 🔍</button>
+                        <button class="med-btn btn-clear" onclick="clearMedicinaCloud(1)">Limpar</button>
+                    </div>
+                    <input type="file" id="file1" style="display:none;" accept="image/*" onchange="handleFile(1, this)">
+                </div>
+                <div class="med-card">
+                    <div class="med-img-box" onclick="triggerFile(2)">
+                        <img id="medImg2" style="display:none;">
+                        <div id="medTxt2" class="med-placeholder">Toque para adicionar</div>
+                        <div id="medLoad2" class="med-loading">
+                            <span>A comprimir...</span>
+                            <span style="font-size:9px">(Pode demorar um pouco)</span>
+                        </div>
+                    </div>
+                    <div class="med-btn-row">
+                        <button class="med-btn btn-view" onclick="showFullImage(2)">Ver 🔍</button>
+                        <button class="med-btn btn-clear" onclick="clearMedicinaCloud(2)">Limpar</button>
+                    </div>
+                    <input type="file" id="file2" style="display:none;" accept="image/*" onchange="handleFile(2, this)">
+                </div>
+            </div>
+        </div>
+
+        <!-- CALENDARIO E BOMBA -->
+        <div class="screen" id="calendarioScreen">
+            <button class="back-btn" onclick="goHome()">← Voltar</button>
+            <h2 class="section-title">Calendário & Manutenção 📅</h2>
+            
+            <h3 style="font-size:14px; margin-bottom:8px; color:var(--primary-dark);">Estado da Bomba</h3>
+            <div class="grid" style="margin-top:0;">
+                <div id="pumpCard" class="maintenance-card">
+                    <span class="m-title">Sensor</span>
+                    <div class="m-dates">Mudado a: <span id="pumpLastDate">-</span></div>
+                    <div class="m-days-left" id="pumpDaysLeft">-</div>
+                    <button class="btn-secundario" style="margin-top:5px;" onclick="editMaintenance('pump')">Registar/Editar</button>
+                </div>
+                <div id="catheterCard" class="maintenance-card">
+                    <span class="m-title">Cateter</span>
+                    <div class="m-dates">Mudado a: <span id="catheterLastDate">-</span></div>
+                    <div class="m-days-left" id="catheterDaysLeft">-</div>
+                    <button class="btn-secundario" style="margin-top:5px;" onclick="editMaintenance('catheter')">Registar/Editar</button>
+                </div>
+            </div>
+
+            <h3 style="font-size:14px; margin:15px 0 8px 0; color:var(--primary-dark);">Próximas Consultas</h3>
+            <div id="calendarList">
+                <div style="text-align:center; padding:10px; color:var(--text-sub);">
+                    Sem consultas marcadas.
+                </div>
+            </div>
+        </div>
+
+        <!-- RELATÓRIOS -->
+        <div class="screen" id="relatoriosScreen">
+            <button class="back-btn" onclick="goHome()">← Voltar</button>
+
+            <h2 class="section-title">Relatórios – Análise Diabetes</h2>
+            
+            <iframe 
+                src="relatorios_V.2.html" 
+                style="width:100%; height:85vh; border:none; border-radius:12px; margin-top:10px; background:#000;">
+            </iframe>
+        </div>
+
+        <!-- ECRÃ DE AI / CHAT -->
+        <div class="screen" id="aiScreen">
+            <button class="back-btn" onclick="goHome()">← Voltar</button>
+            <h2 class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
+                Assistente IA 🤖
+                <button onclick="clearChat()" style="background:none; border:none; font-size:16px; cursor:pointer;" title="Limpar conversa">🗑️</button>
+            </h2>
+
+            <!-- Aviso de segurança -->
+            <div style="font-size:11px; background:#fff7ed; color:#c2410c; padding:8px; border-radius:8px; border:1px solid #fed7aa; margin-bottom:10px;">
+                ⚠️ <strong>Aviso Importante:</strong> A IA pode errar. Confirma sempre os hidratos e doses com a equipa médica. Não uses para emergências.
+            </div>
+
+            <div id="chatContainer">
+                <div id="chatMessages">
+                    <div class="chat-msg bot">Olá Família e olá Nonô! 👋 Sou a tua Super Agente da App. Estou aqui para ajudar! 🦸‍♀️</div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="file" id="aiCameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handleAiImage(this)">
+                    <button class="btn-camera-ai" onclick="triggerAiCamera()">📸</button>
+                    <input type="text" id="chatInput" placeholder="Pergunta-me algo..." onkeypress="if(event.key==='Enter') sendAiMessage()">
+                    <button class="btn-secundario" style="border-radius:99px; padding:0 15px;" onclick="sendAiMessage()">➤</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- DEFINIÇÕES -->
+        <div class="screen" id="definicoesScreen">
+            <button class="back-btn" onclick="goHome()">← Voltar</button>
+            <h2 class="section-title">Definições da Família ⚙️</h2>
+            
+            <div class="card">
+                <h3 style="font-size:14px;">Chave da API (OpenAI) 🔑</h3>
+                <p style="font-size:11px; color:var(--text-sub); margin-bottom:5px;">Necessária para o Assistente IA funcionar.</p>
+                <div class="pin-wrapper" style="margin-top:0;">
+                    <input type="password" id="openaiKeyInput" placeholder="sk-...">
+                    <button onclick="saveOpenAiKey()">Guardar</button>
+                </div>
+                <p style="font-size:10px; color:#ef4444; margin-top:4px;">⚠️ Não partilhes este link com estranhos se guardares a chave aqui.</p>
+            </div>
+
+            <div class="card" style="margin-top:10px;">
+                <h3 style="font-size:14px;">Gerir Calendário (Consultas)</h3>
+                <div style="margin-top:8px;">
+                    <label style="font-size:12px; font-weight:bold;">Adicionar Nova Consulta:</label>
+                    <input type="text" id="newApptTitle" placeholder="Especialidade (ex: Podologia)" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); margin-bottom:5px;">
+                    <div class="pin-wrapper" style="margin-top:0;">
+                        <input type="date" id="newApptDate">
+                        <input type="time" id="newApptTime" style="max-width:80px;">
+                        <button onclick="addAppointment()">Adicionar</button>
+                    </div>
+                </div>
+                <div style="margin-top:12px; border-top:1px solid #eee; padding-top:8px;">
+                     <label style="font-size:12px; font-weight:bold;">Consultas Atuais (Toque para apagar):</label>
+                     <div id="settingsCalendarList" style="margin-top:5px;"></div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:10px;">
+                <h3 style="font-size:14px;">PIN da Família</h3>
+                <div class="pin-wrapper">
+                    <input type="number" id="newGlobalPin" placeholder="Novo PIN (4 dígitos)">
+                    <button onclick="updateGlobalPin()">Mudar PIN</button>
+                </div>
+            </div>
+            <div class="card" style="margin-top:10px;">
+                <h3 style="font-size:14px; margin-bottom:8px;">Visibilidade (Menu Leonor)</h3>
+                <div id="visibilityList"></div>
+            </div>
+        </div>
+
+        <!-- JOGO -->
+        <div class="screen" id="jogoScreen">
+            <button class="back-btn" onclick="goHome()">← Voltar</button>
+            <h2 class="section-title">Quiz Diabetes 🎮</h2>
+            <p class="section-text" style="text-align:center;margin-bottom:15px;">
+                Responde a 5 perguntas para ganhar pontos e medalhas! 🏅
+            </p>
+            <div id="quizContainer" class="quiz-container">
+                <div style="text-align:center; padding: 20px;">
+                    <div style="font-size:60px;">🦄</div>
+                    <button class="btn-calc" style="margin-top:15px; background: linear-gradient(135deg, #10b981, #059669);" onclick="startQuiz()">COMEÇAR JOGO</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+      /* 1. CONFIGURAÇÃO FIREBASE */
+    const myFirebaseConfig = {
+      apiKey: "AIzaSyB-JyydZwX1zTfB5i0AV0fMI-3ayqEjCD0",
+      authDomain: "app-nono.firebaseapp.com",
+      projectId: "app-nono",
+      storageBucket: "app-nono.firebasestorage.app",
+      messagingSenderId: "960955367814",
+      appId: "1:960955367814:web:05ac468556a9d1e76dac07",
+      measurementId: "G-DDSD0BHJ0X"
+    };
+
+    let firebaseConfig, appId;
+    if (typeof __firebase_config !== 'undefined') {
+        firebaseConfig = JSON.parse(__firebase_config);
+        appId = __app_id || 'default';
+    } else {
+        firebaseConfig = myFirebaseConfig;
+        appId = 'fam-machado-brites';
+    }
+
+    let db, auth, currentUser;
+    let globalData = {
+        pin: "1234",
+        visibility: { 
+            caneta: true, 
+            despensa: true, 
+            medicina: true, 
+            jogo: true, 
+            calendario: true, 
+            relatorios: true, 
+            ai: true,
+            link_chatgpt: true,
+            link_gemini: true
+        }
+    };
+    let inventoryData = [];
+    let healthPlan = { rows: [], notes: "" };
+    let medicinaData = { img1: null, img2: null };
+    let calendarData = { appointments: [] };
+    let maintenanceData = { pumpLastDate: null, catheterLastDate: null, sensorCode: "" };
+    let openaiKey = ""; // Guardado localmente ou no Firebase (Cuidado)
+
+    let currentRole = 'leonor';
+    let editingPlanIndex = null;
+    let lastHealthReport = null;
+    let medicinaUnlocked = false;
+
+    function getRootRef() {
+        return db.collection('artifacts').doc(appId).collection('public').doc('data');
+    }
+
+    function markFirebaseError(label) {
+        const badge = document.getElementById('connBadge');
+        if (!badge) return;
+        badge.innerText = label || "Erro (Firebase)";
+        badge.className = "status-badge offline";
+    }
+
+    try {
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        auth = firebase.auth();
+        db.enablePersistence({synchronizeTabs:true}).catch(err => {
+            console.log("Persistência offline desativada:", err);
+        });
+    } catch(e) {
+        console.error("Erro Firebase:", e);
+        markFirebaseError("Erro Firebase");
+    }
+
+    /* 2. TEMA: AUTO + PREFERÊNCIA DO UTILIZADOR */
+    const THEME_KEY = 'leonor_theme_pref'; 
+    function applyThemeFromPref() {
+        const pref = localStorage.getItem(THEME_KEY);
+        if (pref === 'light') {
+            document.body.classList.remove('dark-mode');
+        } else if (pref === 'dark') {
+            document.body.classList.add('dark-mode');
+        } else {
+            const hour = new Date().getHours();
+            const isNight = hour >= 20 || hour < 7;
+            document.body.classList.toggle('dark-mode', isNight);
+        }
+        updateThemeToggleIcon();
+    }
+    function updateThemeToggleIcon() {
+        const btn = document.getElementById('themeToggleBtn');
+        if (!btn) return;
+        const pref = localStorage.getItem(THEME_KEY);
+        const isDark = document.body.classList.contains('dark-mode');
+        if (!pref || pref === 'auto') {
+            btn.textContent = isDark ? '🌙' : '☀️';
+            btn.title = 'Modo automático';
+        } else if (pref === 'dark') {
+            btn.textContent = '🌙';
+            btn.title = 'Modo escuro';
+        } else {
+            btn.textContent = '☀️';
+            btn.title = 'Modo claro';
+        }
+    }
+    function toggleTheme() {
+        let pref = localStorage.getItem(THEME_KEY);
+        if (!pref) pref = 'auto';
+        if (pref === 'light') pref = 'dark';
+        else if (pref === 'dark') pref = 'auto';
+        else pref = 'light';
+        localStorage.setItem(THEME_KEY, pref);
+        applyThemeFromPref();
+    }
+
+
+    /* 3. AUTH */
+    function initAuth() {
+        if (!auth) return;
+        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+            .then(() => auth.signInAnonymously())
+            .catch((error) => {
+                console.log("Falha persistência local, a tentar sessão...", error);
+                return auth.setPersistence(firebase.auth.Auth.Persistence.SESSION)
+                    .then(() => auth.signInAnonymously());
+            })
+            .catch((error) => {
+                console.error("Erro Auth:", error);
+                markFirebaseError("Erro Auth");
+            });
+    }
+
+    if (auth) {
+        auth.onAuthStateChanged((user) => {
+            currentUser = user || null;
+            updateNetworkStatus();
+            if (user && db) {
+                startListeners();
+            } else if (!user) {
+                initAuth();
+            }
+        });
+    }
+
+    window.addEventListener('online', updateNetworkStatus);
+    window.addEventListener('offline', updateNetworkStatus);
+
+    function updateNetworkStatus() {
+        const badge = document.getElementById('connBadge');
+        const alertEl = document.getElementById('localModeAlert');
+        if (!badge || !alertEl) return;
+
+        const isOnline = navigator.onLine;
+        if (isOnline) {
+            alertEl.style.display = "none";
+            if (currentUser) {
+                badge.innerText = "Ligado";
+                badge.className = "status-badge online";
+            } else {
+                badge.innerText = "A ligar...";
+                badge.className = "status-badge";
+            }
+        } else {
+            badge.innerText = "Offline";
+            badge.className = "status-badge offline";
+            alertEl.textContent = "📱 Sem internet. A app pode mostrar dados em cache. As alterações serão sincronizadas quando voltar a ligação.";
+            alertEl.style.display = "block";
+        }
+    }
+
+    /* 4. LISTENERS FIRESTORE */
+    function startListeners() {
+        if (!db) return;
+        const rootRef = getRootRef();
+
+        rootRef.collection('settings').doc('global').onSnapshot(doc => {
+            if (doc.exists) {
+                const data = doc.data() || {};
+                globalData = {
+                    pin: data.pin || globalData.pin || "1234",
+                    visibility: Object.assign({}, globalData.visibility, data.visibility || {})
+                };
+                // Recuperar chave IA se existir
+                if (data.openaiKey) {
+                    openaiKey = data.openaiKey;
+                    document.getElementById('openaiKeyInput').value = openaiKey;
+                    updateAiStatusUI(true);
+                } else {
+                    updateAiStatusUI(false);
+                }
+            } else {
+                doc.ref.set(globalData).catch(e => console.error("Erro a criar settings:", e));
+            }
+            renderVisibility();
+            applyVisibility();
+        }, err => {
+            console.error("Erro Snapshot Settings:", err);
+            markFirebaseError("Erro Settings");
+        });
+
+        rootRef.collection('inventory').doc('main').onSnapshot(doc => {
+            if (doc.exists) {
+                const data = doc.data() || {};
+                inventoryData = data.items || [];
+            } else {
+                inventoryData = [];
+                doc.ref.set({ items: [] }).catch(e => console.error("Erro a criar inventário:", e));
+            }
+            renderInventory();
+        }, err => {
+            console.error("Erro Snapshot Inventory:", err);
+            markFirebaseError("Erro Inventory");
+        });
+
+        rootRef.collection('health').doc('plano').onSnapshot(doc => {
+            if (doc.exists) {
+                const data = doc.data() || {};
+                healthPlan = {
+                    rows: Array.isArray(data.rows) ? data.rows : [],
+                    notes: data.notes || ""
+                };
+            } else {
+                doc.ref.set(healthPlan).catch(e => console.error("Erro a criar plano:", e));
+            }
+            renderPlanTable();
+        }, err => {
+            console.error("Erro Snapshot Plano:", err);
+            markFirebaseError("Erro Plano");
+        });
+
+        rootRef.collection('health').doc('calendar').onSnapshot(doc => {
+            if (doc.exists) {
+                const data = doc.data() || {};
+                calendarData = { appointments: data.appointments || [] };
+            } else {
+                doc.ref.set({ appointments: [] }).catch(e => console.error("Erro a criar calendario:", e));
+            }
+            renderCalendar();
+            renderSettingsCalendar();
+        }, err => console.error("Erro Calendar", err));
+
+        rootRef.collection('health').doc('maintenance').onSnapshot(doc => {
+            if (doc.exists) {
+                maintenanceData = doc.data() || {};
+            } else {
+                doc.ref.set({ pumpLastDate: null, catheterLastDate: null, sensorCode: "" }).catch(e => console.error("Erro a criar maintenance:", e));
+            }
+            renderMaintenance();
+        }, err => console.error("Erro Maintenance", err));
+
+        rootRef.collection('health').doc('medicina').onSnapshot(doc => {
+            if (doc.exists) {
+                medicinaData = doc.data() || { img1: null, img2: null };
+            } else {
+                doc.ref.set(medicinaData).catch(e => console.error("Erro a criar medicina:", e));
+            }
+            renderMedicinaCloud();
+        }, err => {
+            console.error("Erro Snapshot Medicina:", err);
+            markFirebaseError("Erro Medicina");
+        });
+
+        rootRef.collection('health_reports')
+            .orderBy('createdAt','desc')
+            .limit(1)
+            .onSnapshot(snap => {
+                if (!snap.empty) {
+                    lastHealthReport = snap.docs[0].data();
+                } else {
+                    lastHealthReport = null;
+                }
+            }, err => {
+                console.error("Erro Snapshot health_reports:", err);
+                lastHealthReport = null;
+            });
+    }
+
+    function updateAiStatusUI(hasKey) {
+        const dot = document.getElementById('aiStatusDot');
+        if(dot) dot.style.display = hasKey ? 'inline' : 'none';
+    }
+
+    /* 5. TOAST */
+    function showToast(msg) {
+        const t = document.getElementById('syncToast');
+        if (!t) return;
+        t.innerText = msg || "☁️ Sincronizado!";
+        t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', 2000);
+    }
+
+    /* 6. PIN & ÁREAS PROTEGIDAS */
+    function verifyPin(customMsg) {
+        const currentPin = globalData.pin || "1234";
+        const input = prompt(customMsg || "Área Protegida. Introduza o PIN de Família:");
+        if (input === currentPin) return true;
+        if (input !== null) alert("PIN Incorreto ❌");
+        return false;
+    }
+
+    function openLockedArea(screenId) {
+        if (!currentUser) {
+            initAuth();
+            alert("A ligar à Firebase... tenta novamente em alguns segundos.");
+            return;
+        }
+        if (verifyPin()) openScreen(screenId);
+    }
+
+    function updateGlobalPin() {
+        const newPin = document.getElementById('newGlobalPin').value;
+        if (!newPin || newPin.length < 4) {
+            alert("Mínimo 4 dígitos.");
+            return;
+        }
+        globalData.pin = newPin;
+        getRootRef().collection('settings').doc('global')
+            .update({ pin: newPin })
+            .then(() => {
+                alert("PIN Alterado! ✅");
+                document.getElementById('newGlobalPin').value = "";
+            })
+            .catch(err => {
+                console.error("Erro ao guardar PIN:", err);
+                alert("Erro ao guardar o PIN na cloud. Verifica a ligação ou as permissões.");
+            });
+    }
+
+    function saveOpenAiKey() {
+        const key = document.getElementById('openaiKeyInput').value.trim();
+        if(!key.startsWith("sk-")) {
+            alert("A chave não parece válida (deve começar por sk-).");
+            return;
+        }
+        if(!confirm("Guardar a chave? Ficará guardada na base de dados e visível para quem tiver acesso à aplicação.")) return;
+        
+        getRootRef().collection('settings').doc('global')
+            .set({ openaiKey: key }, { merge: true })
+            .then(() => {
+                openaiKey = key;
+                alert("Chave API Guardada! 🤖");
+                updateAiStatusUI(true);
+            });
+    }
+
+    function toggleApp(k, v) { 
+        globalData.visibility[k] = v;
+        let u = {};
+        u[`visibility.${k}`] = v; 
+        getRootRef().collection('settings').doc('global')
+            .update(u)
+            .then(() => showToast())
+            .catch(err => {
+                console.error("Erro ao atualizar visibilidade:", err);
+                alert("Erro ao atualizar visibilidade na cloud.");
+            });
+    }
+
+    /* 7. INVENTÁRIO / DESPENSA */
+    function saveInventory() { 
+        getRootRef().collection('inventory').doc('main')
+            .set({ items: inventoryData })
+            .then(() => showToast())
+            .catch(err => {
+                console.error("Erro ao guardar inventário:", err);
+                alert("Erro ao guardar na cloud.");
+            }); 
+    }
+
+    function renderInventory() {
+        const list = document.getElementById('despensaList'); 
+        if (!list) return;
+        list.innerHTML = "";
+        if (!inventoryData || inventoryData.length === 0) {
+            list.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-sub);">Sem items. Adiciona um novo em baixo.</div>`;
+            return;
+        }
+        inventoryData.forEach((item, idx) => {
+            const isLowHome = item.home < 2;
+            const isLowRx = item.rx < 2;
+            const isLow = (isLowHome || isLowRx);
+
+            const div = document.createElement('div'); 
+            div.className = `card-despensa ${isLow?'low':''}`;
+            
+            const alertHome = isLowHome ? '<span style="color:#ef4444; margin-left:4px;">⚠️</span>' : '';
+            const alertRx = isLowRx ? '<span style="color:#ef4444; margin-left:4px;">⚠️</span>' : '';
+            const headerAlert = isLow ? '<span style="font-size:10px; background:#fee2e2; color:#b91c1c; padding:2px 6px; border-radius:4px;">REPOR</span>' : '';
+
+            div.innerHTML = `
+                <div style="display:flex;justify-content:space-between;font-weight:bold; align-items:center;">
+                    <span>${item.name}</span>
+                    ${headerAlert}
+                </div>
+                <div class="row-stock">
+                    <span>🏠 Casa</span>
+                    <div class="counter-grp" style="${isLowHome ? 'border:1px solid #ef4444; background:#fee2e2;' : ''}">
+                        <button class="counter-btn" onclick="invChange(${idx},'home',-1)">-</button>
+                        <span style="${isLowHome ? 'color:#b91c1c; font-weight:bold;' : ''}">${item.home}${alertHome}</span>
+                        <button class="counter-btn" onclick="invChange(${idx},'home',1)">+</button>
+                    </div>
+                </div>
+                <div class="row-stock">
+                    <span>💊 Farmácia</span>
+                    <div class="counter-grp" style="${isLowRx ? 'border:1px solid #ef4444; background:#fee2e2;' : ''}">
+                        <button class="counter-btn" onclick="invChange(${idx},'rx',-1)">-</button>
+                        <span style="${isLowRx ? 'color:#b91c1c; font-weight:bold;' : ''}">${item.rx}${alertRx}</span>
+                        <button class="counter-btn" onclick="invChange(${idx},'rx',1)">+</button>
+                    </div>
+                </div>
+                <button class="btn-trash" onclick="invDel(${idx})">Apagar</button>`;
+            list.appendChild(div);
+        });
+    }
+    function invChange(idx,f,d) { inventoryData[idx][f]=Math.max(0, inventoryData[idx][f]+d); saveInventory(); }
+    function invDel(idx) { if(confirm("Apagar?")) { inventoryData.splice(idx,1); saveInventory(); } }
+    function addInventoryItem() { 
+        const n = document.getElementById('newItemName').value; 
+        if(n){ 
+            inventoryData.push({name:n,home:0,rx:0}); 
+            saveInventory(); 
+            document.getElementById('newItemName').value=""; 
+        } 
+    }
+
+    function buildStockSummaryHtml() {
+        if(!inventoryData || inventoryData.length === 0) {
+            return `<p style="font-size:13px;text-align:left;">Despensa vazia. Adiciona items na área <strong>Despensa</strong>.</p>`;
+        }
+        let html = "";
+        inventoryData.forEach(item => {
+            const isLowHome = item.home < 2;
+            const isLowRx = item.rx < 2;
+            const style = (isLowHome || isLowRx) ? "color:#b91c1c; font-weight:bold;" : "";
+            const icon = (isLowHome || isLowRx) ? "⚠️" : "";
+            html += `
+            <div class="summary-line" style="${style}">
+                <span>${item.name} ${icon}</span>
+                <span class="summary-vals">
+                    🏠${item.home}${isLowHome ? ' (BAIXO)' : ''} | 
+                    💊${item.rx}${isLowRx ? ' (BAIXO)' : ''}
+                </span>
+            </div>`;
+        });
+        return html;
+    }
+
+    function showStockSummary() {
+        if(!inventoryData || inventoryData.length === 0) { 
+            alert("Despensa vazia."); 
+            return; 
+        }
+        const html = buildStockSummaryHtml();
+        document.getElementById('modalTitle').innerText = "Resumo Despensa 📋";
+        document.getElementById('modalBody').innerHTML = html;
+        document.getElementById('modalImageBox').style.display = 'none';
+        document.getElementById('modalContentBox').style.display = 'block';
+        document.getElementById('universalModal').style.display = 'flex';
+    }
+
+    function showGlobalSummary() {
+        const modalTitleEl = document.getElementById('modalTitle');
+        const modalBodyEl = document.getElementById('modalBody');
+
+        let html = `<p style="font-size:14px;text-align:left;margin-bottom:10px;">
+            <strong>Olá Ricardo, Tânia e Leonor.</strong> Aqui está o resumo:
+        </p>`;
+
+        html += `<h4 style="margin-bottom:8px;color:#be185d;text-align:left;">Relatório Diabetes</h4>`;
+        if(lastHealthReport && (lastHealthReport.reportHtml || lastHealthReport.periodFrom || lastHealthReport.tir != null)) {
+            const fmtDate = iso => iso ? iso.slice(0,10).split('-').reverse().join('-') : '–';
+            const from = fmtDate(lastHealthReport.periodFrom);
+            const to   = fmtDate(lastHealthReport.periodTo);
+            const tirVal = (typeof lastHealthReport.tir === 'number')
+                ? lastHealthReport.tir.toFixed(0) + '%'
+                : (lastHealthReport.tir != null ? lastHealthReport.tir + '%' : '–');
+
+            html += `
+                <div style="font-size:12px;text-align:left;margin-bottom:8px;">
+                    <div><strong>Período:</strong> ${from} a ${to}</div>
+                    <div><strong>TIR:</strong> ${tirVal}</div>
+                </div>
+            `;
+            if(lastHealthReport.reportHtml) {
+                html += `<div style="font-size:12px;text-align:left;">${lastHealthReport.reportHtml}</div>`;
+            } else {
+                html += `<p style="font-size:13px;text-align:left;">Este relatório não tem texto guardado. Abre a área <strong>Relatórios</strong> e gera um novo relatório para ver o detalhe aqui.</p>`;
+            }
+        } else {
+            html += `<p style="font-size:13px;text-align:left;">Ainda não há nenhum relatório guardado. Na área <strong>Relatórios</strong>, carrega o ZIP, gera o relatório e guarda-o para aparecer aqui.</p>`;
+        }
+
+        html += `<hr style="border-color:rgba(148,163,184,0.4); margin:12px 0;">`;
+
+        html += `<h4 style="margin-bottom:8px;color:#be185d;text-align:left;">Resumo Despensa</h4>`;
+        html += buildStockSummaryHtml();
+
+        modalTitleEl.innerText = "Resumo Global 📋";
+        modalBodyEl.innerHTML = html;
+        document.getElementById('modalImageBox').style.display = 'none';
+        document.getElementById('modalContentBox').style.display = 'block';
+        document.getElementById('universalModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('universalModal').style.display = 'none';
+        editingPlanIndex = null;
+    }
+
+    /* --- FUNÇÕES IA CHAT & VISION --- */
+    function triggerAiCamera() {
+        if(!openaiKey) { alert("Configura primeiro a Chave API nas Definições."); openScreen('definicoesScreen'); return; }
+        document.getElementById('aiCameraInput').click();
+    }
+
+    function handleAiImage(input) {
+        if(input.files && input.files[0]) {
+            const file = input.files[0];
+            addChatMessage("user", "📸 [A analisar foto...]");
+            
+            // Comprimir primeiro
+            compressImage(file, 800, 0.6, (base64) => {
+                callOpenAiVision(base64);
+            });
+        }
+    }
+
+    function sendAiMessage() {
+        if(!openaiKey) { alert("Configura primeiro a Chave API nas Definições."); openScreen('definicoesScreen'); return; }
+        const input = document.getElementById('chatInput');
+        const txt = input.value.trim();
+        if(!txt) return;
+
+        addChatMessage("user", txt);
+        input.value = "";
+        
+        callOpenAiText(txt);
+    }
+
+    function addChatMessage(role, text) {
+        const div = document.createElement('div');
+        div.className = `chat-msg ${role==='user'?'user':'bot'}`;
+        div.innerHTML = text.replace(/\n/g, '<br>');
+        const container = document.getElementById('chatMessages');
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function clearChat() {
+        if(confirm("Limpar a conversa?")) {
+            document.getElementById('chatMessages').innerHTML = '<div class="chat-msg bot">Chat limpo. Como posso ajudar?</div>';
+        }
+    }
+
+    async function callOpenAiText(prompt) {
+        // Indicador de escrita
+        const loadingId = "loading_" + Date.now();
+        const container = document.getElementById('chatMessages');
+        const loadDiv = document.createElement('div');
+        loadDiv.id = loadingId;
+        loadDiv.className = "chat-msg bot";
+        loadDiv.style.fontStyle = "italic";
+        loadDiv.style.color = "#888";
+        loadDiv.innerText = "A escrever...";
+        container.appendChild(loadDiv);
+        container.scrollTop = container.scrollHeight;
+
+        try {
+            const response = await fetch("https://api.openai.com/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${openaiKey}`
+                },
+                body: JSON.stringify({
+                    model: "gpt-4o", // ou gpt-3.5-turbo
+                    messages: [
+                        {
+                            role: "system", 
+                            content: `Falas em nome da "App da Nonô", para uma menina com Diabetes Tipo 1 e os seus pais (Ricardo e Tânia).
+- Estás sempre do lado da Leonor, explicas as coisas com carinho e linguagem simples.
+- Quando for um tema delicado (hipoglicemia, cetoacidose, etc.), explicas devagar e recomendas falar com a equipa médica. 
+- NUNCA dás valores de dose de insulina, nem dizes “toma X unidades”, mas podes aconselhar o que fazer (ex: medir glicemia, comer hidratos).
+- Modo Emergência: Fornece "Checklist de hipoglicemia", "Ajuda em caso de cetonas" ou hiperglicemias. Oferece instruções passo-a-passo seguras e avisos para seguir plano médico. Ação em caso de emergência: ligar 112 + usar glucagon.
+- Protocolo de dias de doença, ajuda passo a passo e o que fazer, detalhadamente.
+- Responde SEMPRE em português de Portugal.
+- Lembra-te que és uma SUPER AGENTE de ajuda à Leonor e aos pais dela.`
+                        },
+                        {role: "user", content: prompt}
+                    ],
+                    max_tokens: 500
+                })
+            });
+
+            const data = await response.json();
+            document.getElementById(loadingId).remove();
+
+            if(data.error) {
+                addChatMessage("bot", "Erro da IA: " + data.error.message);
+            } else {
+                const reply = data.choices[0].message.content;
+                addChatMessage("bot", reply);
+            }
+        } catch(err) {
+            document.getElementById(loadingId).remove();
+            addChatMessage("bot", "Erro de ligação. Verifica a internet.");
+            console.error(err);
+        }
+    }
+
+    async function callOpenAiVision(base64Image) {
+        // Remover prefixo data:image/jpeg;base64, para enviar limpo
+        const base64Clean = base64Image.split(',')[1];
+
+        const loadingId = "loading_" + Date.now();
+        const container = document.getElementById('chatMessages');
+        const loadDiv = document.createElement('div');
+        loadDiv.id = loadingId;
+        loadDiv.className = "chat-msg bot";
+        loadDiv.style.fontStyle = "italic";
+        loadDiv.innerText = "A ver a imagem... 🍲";
+        container.appendChild(loadDiv);
+        container.scrollTop = container.scrollHeight;
+
+        try {
+            const response = await fetch("https://api.openai.com/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${openaiKey}`
+                },
+                body: JSON.stringify({
+                    model: "gpt-4o",
+                    messages: [
+                        {
+                            role: "system", 
+                            content: "És um especialista em contagem de hidratos de carbono para diabéticos tipo 1. Analisa a imagem, identifica os alimentos visíveis e estima o peso e a quantidade de hidratos de carbono (HC) para cada um. No final dá um TOTAL aproximado. Sê conciso. Adiciona sempre um aviso de que é uma estimativa de IA."
+                        },
+                        {
+                            role: "user",
+                            content: [
+                                { type: "text", text: "Quantos hidratos de carbono vês nesta comida?" },
+                                { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Clean}` } }
+                            ]
+                        }
+                    ],
+                    max_tokens: 500
+                })
+            });
+
+            const data = await response.json();
+            document.getElementById(loadingId).remove();
+
+            if(data.error) {
+                addChatMessage("bot", "Erro Vision: " + data.error.message);
+            } else {
+                const reply = data.choices[0].message.content;
+                addChatMessage("bot", reply);
+            }
+        } catch(err) {
+            document.getElementById(loadingId).remove();
+            addChatMessage("bot", "Erro ao enviar imagem.");
+            console.error(err);
+        }
+    }
+
+
+    /* 8. MEDICINA */
+    function ensureMedicinaAuth() {
+        if (medicinaUnlocked) return true;
+        if (verifyPin("Área de Medicina protegida. Introduz o PIN da Família para alterar as imagens:")) {
+            medicinaUnlocked = true;
+            return true;
+        }
+        return false;
+    }
+
+    function triggerFile(id) { 
+        if (!ensureMedicinaAuth()) return;
+        document.getElementById('file'+id).click(); 
+    }
+
+    function handleFile(id, input) {
+        if (!ensureMedicinaAuth()) {
+            if (input) input.value = "";
+            return;
+        }
+        if(input.files && input.files[0]) {
+            const file = input.files[0];
+            document.getElementById('medLoad'+id).style.display = 'flex';
+            compressImage(file, 1000, 0.7, (compressedBase64) => {
+                if(compressedBase64.length > 950000) {
+                     compressImage(file, 800, 0.5, (retryBase64) => {
+                         if(retryBase64.length > 950000) {
+                             alert("Imagem demasiado complexa.");
+                             document.getElementById('medLoad'+id).style.display = 'none';
+                         } else { saveToCloud(id, retryBase64); }
+                     });
+                } else { saveToCloud(id, compressedBase64); }
+            });
+        }
+    }
+
+    function compressImage(file, maxWidth, quality, callback) {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = event => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const elem = document.createElement('canvas');
+                let width = img.width; let height = img.height;
+                if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
+                elem.width = width; elem.height = height;
+                const ctx = elem.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                const dataUrl = elem.toDataURL('image/jpeg', quality);
+                callback(dataUrl);
+            }
+            img.onerror = () => { 
+                alert("Erro ao ler imagem."); 
+                if(typeof id !== 'undefined') document.getElementById('medLoad'+id).style.display = 'none'; 
+            };
+        }
+    }
+    
+    function saveToCloud(id, base64) {
+        medicinaData['img'+id] = base64;
+        const update = {}; 
+        update['img'+id] = base64;
+        getRootRef().collection('health').doc('medicina')
+            .set(update, { merge: true })
+            .then(() => {
+                document.getElementById('medLoad'+id).style.display = 'none';
+                showToast();
+            })
+            .catch(err => { 
+                console.error("Erro a guardar medicina:", err);
+                document.getElementById('medLoad'+id).style.display = 'none';
+                alert("Erro ao guardar imagem na cloud.");
+            });
+    }
+
+    function clearMedicinaCloud(slot) {
+        if (!ensureMedicinaAuth()) return;
+        if(confirm("Apagar imagem?")) {
+            medicinaData['img'+slot] = null;
+            const update = {}; 
+            update['img'+slot] = null;
+            getRootRef().collection('health').doc('medicina')
+                .set(update, { merge: true })
+                .then(() => showToast())
+                .catch(err => {
+                    console.error("Erro a limpar medicina:", err);
+                    alert("Erro ao limpar imagem na cloud.");
+                });
+        }
+    }
+
+    function renderMedicinaCloud() {
+        for(let i=1; i<=2; i++) {
+            const data = medicinaData['img'+i];
+            const imgEl = document.getElementById('medImg'+i);
+            const txtEl = document.getElementById('medTxt'+i);
+            if(!imgEl || !txtEl) continue;
+            if(data) { 
+                imgEl.src = data; 
+                imgEl.style.display = 'block'; 
+                txtEl.style.display = 'none'; 
+            } else { 
+                imgEl.style.display = 'none'; 
+                txtEl.style.display = 'block'; 
+            }
+            const loadEl = document.getElementById('medLoad'+i);
+            if (loadEl) loadEl.style.display = 'none';
+        }
+    }
+
+    let currentZoom = 1;
+    function showFullImage(id) {
+        const data = medicinaData['img'+id];
+        if(!data) { alert("Sem imagem para ver."); return; }
+        resetZoom();
+        document.getElementById('modalContentBox').style.display = 'none';
+        document.getElementById('modalImageBox').style.display = 'block';
+        document.getElementById('modalFullImg').src = data;
+        document.getElementById('universalModal').style.display = 'flex';
+    }
+    function zoomIn() {
+        currentZoom += 0.5;
+        if(currentZoom > 5) currentZoom = 5;
+        applyZoom();
+    }
+    function zoomOut() {
+        currentZoom -= 0.5;
+        if(currentZoom < 1) currentZoom = 1;
+        applyZoom();
+    }
+    function resetZoom() {
+        currentZoom = 1;
+        applyZoom();
+    }
+    function applyZoom() {
+        const img = document.getElementById('modalFullImg');
+        if(!img) return;
+        if(currentZoom > 1) {
+            img.style.maxWidth = 'none';
+            img.style.width = (currentZoom * 100) + '%';
+        } else {
+            img.style.maxWidth = '100%';
+            img.style.width = 'auto';
+        }
+    }
+
+    /* 9. CALCULADORA */
+    function setCurrentTime() { 
+        document.getElementById('calcTime').value = new Date().toTimeString().substring(0,5); 
+    }
+
+    function togglePlano() {
+        const planoArea = document.getElementById('planoArea');
+        if(planoArea.style.display === 'none' || planoArea.style.display === '') {
+            if(verifyPin("PIN de Família para editar plano:")) {
+                planoArea.style.display = 'block';
+                renderPlanTable();
+            }
+        } else { 
+            planoArea.style.display = 'none'; 
+        }
+    }
+
+    document.querySelectorAll('input[name="calcMode"]').forEach(el => {
+        el.addEventListener('change', (e) => {
+            document.getElementById('manualFields').style.display = (e.target.value === 'simples') ? 'block' : 'none';
+        });
+    });
+
+    function getPlanForTime(timeStr) {
+        if(!healthPlan.rows || healthPlan.rows.length === 0) return null;
+        const [h, m] = timeStr.split(':').map(Number);
+        const mins = h*60 + m;
+        for(let row of healthPlan.rows) {
+            const [sh, sm] = row.start.split(':').map(Number);
+            const [eh, em] = row.end.split(':').map(Number);
+            const sMins = sh*60 + sm;
+            const eMins = eh*60 + em;
+            if (sMins <= eMins) { 
+                if(mins >= sMins && mins < eMins) return row; 
+            } else { 
+                if(mins >= sMins || mins < eMins) return row; 
+            }
+        }
+        return null;
+    }
+
+    function calculateInsulin() {
+        const time = document.getElementById('calcTime').value;
+        const bg = parseFloat(document.getElementById('calcBg').value) || 0;
+        const carbs = parseFloat(document.getElementById('calcCarbs').value) || 0;
+        const iob = parseFloat(document.getElementById('calcIob').value) || 0;
+        const mode = document.querySelector('input[name="calcMode"]:checked').value;
+        
+        let ratio, fsi, target, details = "";
+        if(mode === 'plano') {
+            if(!time) { alert("Indica a hora."); return; }
+            const row = getPlanForTime(time);
+            if(!row) { alert("Sem plano para esta hora."); return; }
+            ratio = parseFloat(row.ratio); 
+            fsi = parseFloat(row.fsi); 
+            target = parseFloat(row.target);
+            details = `Plano (${row.start}-${row.end}): 1:${ratio} | FSI:${fsi} | Alvo:${target}`;
+        } else {
+            ratio = parseFloat(document.getElementById('manualRatio').value);
+            fsi = parseFloat(document.getElementById('manualFsi').value);
+            target = parseFloat(document.getElementById('manualTarget').value);
+            details = `Manual: 1:${ratio}`;
+        }
+        const foodDose = carbs / ratio;
+        let corrDose = 0;
+        if(document.getElementById('calcCorrection').checked && bg > target && fsi > 0) {
+            corrDose = (bg - target) / fsi;
+        }
+        let total = Math.max(0, foodDose + corrDose - iob);
+        const resDiv = document.getElementById('calcResult');
+        resDiv.style.display = 'block';
+        resDiv.innerHTML = `<strong>Total: ${total.toFixed(2)} U</strong><br><span style="font-size:12px">Refeição: ${foodDose.toFixed(2)} + Correção: ${corrDose.toFixed(2)} - IOB: ${iob}<br>${details}</span>`;
+    }
+
+    function renderPlanTable() {
+        const tbody = document.getElementById('planoBody');
+        if (!tbody) return;
+        tbody.innerHTML = "";
+        document.getElementById('planoNotes').value = healthPlan.notes || "";
+        (healthPlan.rows || []).forEach((row, idx) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${row.start || ''}</td>
+                <td>${row.end || ''}</td>
+                <td>${row.ratio || ''}</td>
+                <td>${row.fsi || ''}</td>
+                <td>${row.target || ''}</td>
+                <td>
+                    <button class="plan-actions-btn edit" onclick="editPlanRow(${idx})">✏️</button>
+                    <button class="plan-actions-btn del" onclick="deletePlanRow(${idx})">x</button>
+                </td>`;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function addPlanoRow() { 
+        healthPlan.rows = healthPlan.rows || [];
+        healthPlan.rows.push({ start:"08:00", end:"13:00", ratio:10, fsi:50, target:100 }); 
+        renderPlanTable(); 
+    }
+
+    function editPlanRow(idx) {
+        if (!healthPlan.rows || !healthPlan.rows[idx]) return;
+        editingPlanIndex = idx;
+        const row = healthPlan.rows[idx];
+        const body = document.getElementById('modalBody');
+        const title = document.getElementById('modalTitle');
+        title.innerText = "Editar faixa do plano";
+        body.innerHTML = `
+            <div class="plan-edit-form">
+                <div class="plan-edit-row">
+                    <div>
+                        <label>Início</label>
+                        <input type="time" id="planEdit_start" value="${row.start || ''}">
+                    </div>
+                    <div>
+                        <label>Fim</label>
+                        <input type="time" id="planEdit_end" value="${row.end || ''}">
+                    </div>
+                </div>
+                <div class="plan-edit-row">
+                    <div>
+                        <label>I:H</label>
+                        <input type="number" id="planEdit_ratio" value="${row.ratio || ''}">
+                    </div>
+                    <div>
+                        <label>FSI</label>
+                        <input type="number" id="planEdit_fsi" value="${row.fsi || ''}">
+                    </div>
+                </div>
+                <div>
+                    <label>Alvo</label>
+                    <input type="number" id="planEdit_target" value="${row.target || ''}">
+                </div>
+                <button class="btn-calc" style="margin-top:12px;" onclick="savePlanRowFromModal()">Guardar faixa</button>
+            </div>
+        `;
+        document.getElementById('modalImageBox').style.display = 'none';
+        document.getElementById('modalContentBox').style.display = 'block';
+        document.getElementById('universalModal').style.display = 'flex';
+    }
+
+    function savePlanRowFromModal() {
+        if (editingPlanIndex === null || !healthPlan.rows || !healthPlan.rows[editingPlanIndex]) {
+            closeModal();
+            return;
+        }
+        const start  = document.getElementById('planEdit_start').value || "00:00";
+        const end    = document.getElementById('planEdit_end').value || "00:00";
+        const ratio  = document.getElementById('planEdit_ratio').value || "";
+        const fsi    = document.getElementById('planEdit_fsi').value || "";
+        const target = document.getElementById('planEdit_target').value || "";
+
+        healthPlan.rows[editingPlanIndex] = { start, end, ratio, fsi, target };
+        renderPlanTable();
+        closeModal();
+    }
+
+    function deletePlanRow(idx) { 
+        healthPlan.rows.splice(idx, 1); 
+        renderPlanTable(); 
+    }
+
+    function savePlanoToCloud() {
+        healthPlan.notes = document.getElementById('planoNotes').value;
+        getRootRef().collection('health').doc('plano')
+            .set(healthPlan)
+            .then(() => {
+                alert("Plano Guardado! ✅");
+                showToast();
+            })
+            .catch(err => {
+                console.error("Erro ao guardar plano:", err);
+                alert("Erro ao guardar plano na cloud.");
+            });
+    }
+
+    /* 10. ALIMENTAÇÃO – ARREDONDAMENTO SEM DECIMAIS */
+    function calcR3() {
+        const hc = parseFloat(document.getElementById('r3_hc').value) || 0;
+        const peso = parseFloat(document.getElementById('r3_peso').value) || 0;
+        const res = (hc * peso) / 100;
+        const rounded = Math.round(res); 
+        document.getElementById('r3_res').innerText = isNaN(rounded) ? 0 : rounded;
+    }
+    function resetR3() { 
+        document.getElementById('r3_hc').value = ""; 
+        document.getElementById('r3_peso').value = ""; 
+        document.getElementById('r3_res').innerText = "0"; 
+    }
+
+    /* 11. VISIBILIDADE & NAVEGAÇÃO */
+    function renderVisibility() {
+        const container = document.getElementById('visibilityList');
+        if (!container) return;
+        const apps = [
+            {id:'caneta', l:'Caneta'},
+            {id:'despensa', l:'Despensa'},
+            {id:'medicina', l:'Medicina'},
+            {id:'calendario', l:'Calendário'},
+            {id:'jogo', l:'Jogo'},
+            {id:'relatorios', l:'Relatórios'},
+            {id:'ai', l:'Assistente IA 🤖'},
+            {id:'link_chatgpt', l:'Atalho ChatGPT'},
+            {id:'link_gemini', l:'Atalho Gemini'}
+        ];
+        container.innerHTML="";
+        apps.forEach(app => {
+            const div = document.createElement('div'); 
+            div.className='toggle-row';
+            const vis = globalData.visibility && typeof globalData.visibility[app.id] !== 'undefined'
+                ? globalData.visibility[app.id]
+                : true;
+            div.innerHTML=`<input type="checkbox" ${vis?'checked':''} onchange="toggleApp('${app.id}',this.checked)"> ${app.l}`;
+            container.appendChild(div);
+        });
+    }
+    
+    function goHome() { 
+        document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); 
+        document.getElementById('homeScreen').classList.add('active'); 
+    }
+    function openScreen(id) { 
+        document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); 
+        document.getElementById(id).classList.add('active'); 
+    }
+    function setRole(r) { 
+        currentRole = r; 
+        document.getElementById('btnLeonor').classList.toggle('active', r==='leonor'); 
+        document.getElementById('btnAdulto').classList.toggle('active', r==='adulto'); 
+        applyVisibility(); 
+        goHome(); 
+    }
+
+    function applyVisibility() {
+        const v = globalData.visibility || {};
+        const tiles = { 
+            caneta: document.querySelector('[data-app="caneta"]'), 
+            despensa: document.querySelector('[data-app="despensa"]'), 
+            medicina: document.querySelector('[data-app="medicina"]'), 
+            calendario: document.querySelector('[data-app="calendario"]'),
+            jogo: document.querySelector('[data-app="jogo"]'), 
+            relatorios: document.querySelector('[data-app="relatorios"]'),
+            ai: document.querySelector('[data-app="ai"]'),
+            definicoes: document.querySelector('[data-app="definicoes"]'),
+            link_chatgpt: document.querySelector('[data-app="link_chatgpt"]'),
+            link_gemini: document.querySelector('[data-app="link_gemini"]')
+        };
+        if (!tiles.caneta) return;
+        if(currentRole==='leonor') {
+            tiles.caneta.style.display = (v.caneta !== false) ? 'flex' : 'none'; 
+            tiles.despensa.style.display = (v.despensa !== false) ? 'flex' : 'none'; 
+            tiles.medicina.style.display = (v.medicina !== false) ? 'flex' : 'none'; 
+            tiles.calendario.style.display = (v.calendario !== false) ? 'flex' : 'none';
+            tiles.jogo.style.display = (v.jogo !== false) ? 'flex' : 'none'; 
+            tiles.relatorios.style.display = (v.relatorios !== false) ? 'flex' : 'none';
+            tiles.ai.style.display = (v.ai !== false) ? 'flex' : 'none';
+            
+            // Novos Links
+            if(tiles.link_chatgpt) tiles.link_chatgpt.style.display = (v.link_chatgpt !== false) ? 'block' : 'none';
+            if(tiles.link_gemini) tiles.link_gemini.style.display = (v.link_gemini !== false) ? 'block' : 'none';
+
+            tiles.definicoes.style.display='none';
+        } else { 
+            for(let k in tiles) if (tiles[k]) tiles[k].style.display = (k.startsWith('link_') ? 'block' : 'flex'); 
+        }
+    }
+
+    /* 12. LOGICA DE CALENDÁRIO E MANUTENÇÃO */
+    function getDaysLeft(dateStr) {
+        if(!dateStr) return null;
+        const target = new Date(dateStr);
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        target.setHours(0,0,0,0);
+        const diff = target - today;
+        return Math.ceil(diff / (1000 * 60 * 60 * 24));
+    }
+
+    function getDayOfWeekName(dateStr) {
+        if(!dateStr) return "";
+        const days = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+        const d = new Date(dateStr);
+        return days[d.getDay()];
+    }
+
+    function addAppointment() {
+        const title = document.getElementById('newApptTitle').value;
+        const date = document.getElementById('newApptDate').value;
+        const time = document.getElementById('newApptTime').value;
+
+        if(!title || !date) {
+            alert("Preenche a especialidade e a data.");
+            return;
+        }
+
+        calendarData.appointments.push({ title, date, time: time || "" });
+        calendarData.appointments.sort((a,b) => {
+            const da = new Date(a.date + (a.time ? 'T'+a.time : ''));
+            const db = new Date(b.date + (b.time ? 'T'+b.time : ''));
+            return da - db;
+        });
+        
+        getRootRef().collection('health').doc('calendar')
+            .set(calendarData)
+            .then(() => {
+                showToast("Consulta adicionada! 📅");
+                document.getElementById('newApptTitle').value = "";
+                document.getElementById('newApptDate').value = "";
+                document.getElementById('newApptTime').value = "";
+            })
+            .catch(err => alert("Erro ao guardar consulta."));
+    }
+
+    function removeAppointment(index) {
+        if(!confirm("Apagar esta consulta?")) return;
+        calendarData.appointments.splice(index, 1);
+        getRootRef().collection('health').doc('calendar')
+            .set(calendarData)
+            .then(() => showToast("Consulta apagada."))
+            .catch(err => alert("Erro ao apagar."));
+    }
+
+    function renderSettingsCalendar() {
+        const list = document.getElementById('settingsCalendarList');
+        if(!list) return;
+        list.innerHTML = "";
+        
+        if(!calendarData.appointments || calendarData.appointments.length === 0) {
+            list.innerHTML = "<div style='color:#888; font-size:12px; font-style:italic;'>Sem consultas.</div>";
+            return;
+        }
+
+        calendarData.appointments.forEach((appt, idx) => {
+            const days = getDaysLeft(appt.date);
+            let dayText = days === 0 ? "Hoje" : (days > 0 ? `Faltam ${days} dias` : "Já passou");
+            const timeStr = appt.time ? ` às ${appt.time}` : "";
+            
+            const div = document.createElement('div');
+            div.style.cssText = "display:flex; justify-content:space-between; padding:6px; border-bottom:1px solid #eee; font-size:13px;";
+            div.innerHTML = `
+                <div>
+                    <strong>${appt.title}</strong><br>
+                    <span style="color:#555">${appt.date}${timeStr} (${dayText})</span>
+                </div>
+                <button onclick="removeAppointment(${idx})" style="background:none; border:none; color:red; font-weight:bold;">🗑️</button>
+            `;
+            list.appendChild(div);
+        });
+    }
+
+    function renderCalendar() {
+        const list = document.getElementById('calendarList');
+        if(!list) return;
+        list.innerHTML = "";
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        
+        const futureAppts = (calendarData.appointments || []).filter(a => {
+            const d = new Date(a.date);
+            d.setHours(0,0,0,0);
+            return d >= today;
+        });
+
+        if(futureAppts.length === 0) {
+            list.innerHTML = `<div style="text-align:center; padding:10px; color:var(--text-sub);">Sem consultas futuras.</div>`;
+        } else {
+            futureAppts.forEach(appt => {
+                const days = getDaysLeft(appt.date);
+                const dateObj = new Date(appt.date);
+                const dayStr = dateObj.getDate();
+                const monthStr = dateObj.toLocaleDateString('pt-PT', { month: 'short' }).toUpperCase();
+                const weekDay = getDayOfWeekName(appt.date);
+                const timeInfo = appt.time ? ` às ${appt.time}` : "";
+                
+                const div = document.createElement('div');
+                div.className = "calendar-card";
+                div.innerHTML = `
+                    <div class="calendar-date-box">
+                        <div style="font-size:18px;">${dayStr}</div>
+                        <div style="font-size:10px;">${monthStr}</div>
+                    </div>
+                    <div class="calendar-info">
+                        <div class="calendar-title">${appt.title}</div>
+                        <div class="calendar-countdown">
+                            <span style="font-weight:600; color:var(--primary-dark);">${weekDay}${timeInfo}</span><br>
+                            ${days === 0 ? "É HOJE! 🎉" : "Faltam " + days + " dias"}
+                        </div>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+    }
+
+    function editMaintenance(type) {
+        if(!verifyPin("Para editar a data, precisas do PIN:")) return;
+        const body = document.getElementById('modalBody');
+        const title = document.getElementById('modalTitle');
+        const todayStr = new Date().toISOString().split('T')[0];
+        let codeHtml = "";
+        let currentValue = "";
+        if(type === 'pump') {
+            currentValue = maintenanceData.pumpLastDate || todayStr;
+            const currentCode = maintenanceData.sensorCode || "";
+            codeHtml = `
+                <div style="margin-top:10px;">
+                    <label style="font-size:12px; font-weight:bold; color:var(--primary-dark);">Código Ativação Sensor (4 dígitos)</label>
+                    <input type="number" id="maintCodeEdit" placeholder="Ex: 1234" value="${currentCode}" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border);">
+                </div>
+            `;
+        } else {
+            currentValue = maintenanceData.catheterLastDate || todayStr;
+        }
+
+        title.innerText = "Registar " + (type==='pump' ? 'Sensor' : 'Cateter');
+        body.innerHTML = `
+            <div style="text-align:left;">
+                <p style="font-size:13px; color:#666; margin-bottom:10px;">Indica a data em que fizeste a troca.</p>
+                <label style="font-size:12px; font-weight:bold; color:var(--primary-dark);">Data da Troca</label>
+                <input type="date" id="maintDateEdit" value="${currentValue}" style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border);">
+                ${codeHtml}
+                <button class="btn-calc" style="margin-top:15px;" onclick="saveMaintenanceFromModal('${type}')">Guardar</button>
+            </div>
+        `;
+        document.getElementById('modalImageBox').style.display = 'none';
+        document.getElementById('modalContentBox').style.display = 'block';
+        document.getElementById('universalModal').style.display = 'flex';
+    }
+
+    function saveMaintenanceFromModal(type) {
+        const newDate = document.getElementById('maintDateEdit').value;
+        if(!newDate) { alert("Escolhe uma data."); return; }
+        if(type === 'pump') {
+            maintenanceData.pumpLastDate = newDate;
+            const codeInput = document.getElementById('maintCodeEdit');
+            if(codeInput) maintenanceData.sensorCode = codeInput.value;
+        }
+        if(type === 'catheter') {
+            maintenanceData.catheterLastDate = newDate;
+        }
+        getRootRef().collection('health').doc('maintenance')
+            .set(maintenanceData)
+            .then(() => {
+                showToast("Manutenção atualizada! ✅");
+                closeModal();
+            })
+            .catch(err => alert("Erro ao guardar manutenção."));
+    }
+
+    function renderMaintenance() {
+        const code = maintenanceData.sensorCode ? `Cód: ${maintenanceData.sensorCode}` : "";
+        renderMaintCard('pump', maintenanceData.pumpLastDate, 10, 'pumpLastDate', 'pumpDaysLeft', 'pumpCard', code);
+        renderMaintCard('catheter', maintenanceData.catheterLastDate, 3, 'catheterLastDate', 'catheterDaysLeft', 'catheterCard', null);
+    }
+
+    function renderMaintCard(type, lastDateStr, intervalDays, dateElId, daysElId, cardId, extraInfo) {
+        const dateEl = document.getElementById(dateElId);
+        const daysEl = document.getElementById(daysElId);
+        const card = document.getElementById(cardId);
+        if(!lastDateStr) {
+            dateEl.innerText = "-";
+            daysEl.innerText = "-";
+            card.className = "maintenance-card";
+            return;
+        }
+        const last = new Date(lastDateStr);
+        const next = new Date(last);
+        next.setDate(last.getDate() + intervalDays);
+        const nextDateStr = next.toISOString().split('T')[0];
+        const nextDayName = getDayOfWeekName(nextDateStr);
+        const parts = lastDateStr.split('-');
+        let htmlInfo = `${parts[2]}/${parts[1]}`;
+        if (extraInfo) {
+            htmlInfo += `<br><span style="font-size:11px; color:#4b5563; font-weight:normal;">${extraInfo}</span>`;
+        }
+        htmlInfo += `<div style="margin-top:4px; font-size:11px; color:var(--primary); font-weight:600;">Próxima: ${nextDayName}</div>`;
+        dateEl.innerHTML = htmlInfo;
+        const daysLeft = getDaysLeft(nextDateStr);
+        if(daysLeft < 0) {
+            daysEl.innerText = `ATRASADO ${Math.abs(daysLeft)} dia(s)`;
+            card.className = "maintenance-card warning";
+        } else if (daysLeft === 0) {
+            daysEl.innerText = "HOJE!";
+            card.className = "maintenance-card warning";
+        } else {
+            daysEl.innerText = `Faltam ${daysLeft} dias`;
+            card.className = "maintenance-card ok";
+        }
+    }
+
+    /* 13. QUIZ MELHORADO (V14) */
+    const allQuestions = [
+        {q:"Estás a sentir-te a tremer e com suores frios. O que pode ser?", opts:["Hiper (Alto)","Hipo (Baixo)","Sono"], a:1, expl:"Tremuras e suores são sinais clássicos de Hipo! 🍭"},
+        {q:"Qual é o local habitual para colocar o cateter da bomba?", opts:["Braço ou Barriga","Pé","Cabeça"], a:0, expl:"A barriga e a parte de trás do braço são ótimos sítios! 👍"},
+        {q:"Estás com 250 mg/dL e a seta a subir. Isto é uma...", opts:["Hipo","Hiper","Normal"], a:1, expl:"250 é alto, é uma Hiper. Pode ser preciso uma correção! 💉"},
+        {q:"Vais ter aula de ginástica. O que deves fazer antes?", opts:["Comer muitos doces","Ver a glicemia","Dormir"], a:1, expl:"Sempre ver a glicemia antes de fazer exercício! 🏃‍♀️"},
+        {q:"Qual destes alimentos tem mais Hidratos de Carbono?", opts:["Queijo","Água","Pão"], a:2, expl:"O Pão tem hidratos! O queijo e a água quase não têm. 🍞"},
+        {q:"O sensor diz 'SETA PARA BAIXO' (↓). O que está a acontecer?", opts:["Açúcar a subir","Açúcar a descer rápido","Açúcar parado"], a:1, expl:"Seta para baixo significa que está a descer depressa! Atenção! 📉"},
+        {q:"Quantos dias (normalmente) dura o cateter da bomba?", opts:["3 dias","10 dias","1 ano"], a:0, expl:"Mudamos o cateter a cada 3 dias para não infetar. 🗓️"},
+        {q:"Para tratar uma Hipo rápida, o que é melhor?", opts:["Chocolate","Sumo ou Açúcar","Bife"], a:1, expl:"Líquidos doces ou açúcar agem mais rápido que chocolate! 🧃"},
+        {q:"A insulina serve para...", opts:["Subir o açúcar","Baixar o açúcar","Dar sabor"], a:1, expl:"A insulina é a chave que ajuda a baixar o açúcar no sangue. 🔑"},
+        {q:"Antes de comer, o que temos de fazer na bomba?", opts:["Mudar a pilha","Dar o Bólus","Desligar"], a:1, expl:"Temos de dizer à bomba quantos hidratos vamos comer (Bólus). 🍲"}
+    ];
+
+    let quizQuestions = [];
+    let qIdx=0, score=0;
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function startQuiz() { 
+        qIdx=0; 
+        score=0; 
+        // Escolhe 5 perguntas aleatórias
+        const shuffled = shuffleArray([...allQuestions]);
+        quizQuestions = shuffled.slice(0, 5);
+        renderQuestion(); 
+    }
+
+    function renderQuestion() {
+        const div = document.getElementById('quizContainer');
+        if(qIdx >= quizQuestions.length) { 
+            let msg = "";
+            if(score === 5) msg = "Perfeito! Campeã do Mundo! 🏆🏎️";
+            else if(score >= 3) msg = "Muito bom! Estás uma especialista! 🌟";
+            else msg = "Boa tentativa! Vamos treinar mais? 💪";
+
+            div.innerHTML=`
+                <div style="text-align:center; padding:20px;">
+                    <div style="font-size:50px;">🎉</div>
+                    <h3 style="color:var(--primary-dark);">Fim do Jogo!</h3>
+                    <p style="font-size:18px; margin:10px 0;">Acertaste ${score} em ${quizQuestions.length}</p>
+                    <p style="font-weight:bold; color:#db2777;">${msg}</p>
+                    <button class="btn-calc" style="margin-top:20px;" onclick="startQuiz()">JOGAR OUTRA VEZ</button>
+                </div>`; 
+            return; 
+        }
+
+        const q = quizQuestions[qIdx]; 
+        let html = `
+            <div style="text-align:left;">
+                <span style="font-size:12px; color:var(--text-sub);">Pergunta ${qIdx+1} de ${quizQuestions.length}</span>
+                <h3 style="margin:5px 0 15px 0; color:var(--primary-dark);">${q.q}</h3>
+            </div>
+            <div id="quizOptionsArea">
+        `;
+        
+        q.opts.forEach((o,i)=>{ 
+            html+=`<button id="optBtn_${i}" class="quiz-option-btn" onclick="checkAnswer(${i})">${o}</button>`; 
+        });
+        
+        html += `</div>
+            <div id="quizFeedback" class="quiz-feedback"></div>
+            <button id="quizNextBtn" class="quiz-next-btn" onclick="nextQuestion()">Próxima Pergunta →</button>
+        `;
+        div.innerHTML = html;
+    }
+
+    function checkAnswer(selectedIdx) {
+        const q = quizQuestions[qIdx];
+        const correctIdx = q.a;
+        const feedbackEl = document.getElementById('quizFeedback');
+        const nextBtn = document.getElementById('quizNextBtn');
+        const optionsArea = document.getElementById('quizOptionsArea');
+
+        // Desativa botões
+        const btns = optionsArea.getElementsByTagName('button');
+        for(let btn of btns) { btn.disabled = true; }
+
+        const selectedBtn = document.getElementById(`optBtn_${selectedIdx}`);
+        const correctBtn = document.getElementById(`optBtn_${correctIdx}`);
+
+        if(selectedIdx === correctIdx) {
+            score++;
+            selectedBtn.classList.add('correct');
+            feedbackEl.className = "quiz-feedback correct";
+            feedbackEl.innerHTML = `<strong>Correto! 🦄</strong><br>${q.expl}`;
+        } else {
+            selectedBtn.classList.add('wrong');
+            correctBtn.classList.add('correct'); // Mostra qual era a certa
+            feedbackEl.className = "quiz-feedback wrong";
+            feedbackEl.innerHTML = `<strong>Quase! 🙈</strong><br>${q.expl}`;
+        }
+
+        feedbackEl.style.display = 'block';
+        nextBtn.style.display = 'block';
+    }
+
+    function nextQuestion() {
+        qIdx++;
+        renderQuestion();
+    }
+
+    /* 14. INICIALIZAÇÃO VISUAL */
+    applyVisibility();
+    applyThemeFromPref();
+</script>
+</body>
+</html>
