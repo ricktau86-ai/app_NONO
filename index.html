@@ -2245,6 +2245,18 @@ body::after {
 }
 
 </style>
+    <!-- WebLLM — carregado como ES Module e exposto globalmente -->
+    <script type="module">
+        try {
+            const webllm = await import('https://esm.sh/@mlc-ai/web-llm@0.2.79');
+            window._CreateMLCEngine = webllm.CreateMLCEngine;
+            window._webllmReady = true;
+            console.log('WebLLM carregado com sucesso');
+        } catch(e) {
+            window._webllmReady = false;
+            console.warn('WebLLM não carregado (sem internet?):', e.message);
+        }
+    </script>
 </head>
 <body>
 
@@ -5917,24 +5929,23 @@ async function initAiOffline() {
     document.getElementById('aiProgressTitle').textContent      = '⏳ A carregar modelo (pode demorar na 1ª vez)...';
 
     try {
-        if (!window.webllm) {
-            await new Promise((resolve, reject) => {
-                const s = document.createElement('script');
-                s.src = 'https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.79/lib/index.js';
-                s.onload  = resolve;
-                s.onerror = () => reject(new Error('Falha ao carregar WebLLM. Verifica a ligação.'));
-                document.head.appendChild(s);
-            });
+        // Aguardar até o WebLLM estar pronto (carregado pelo script module no head)
+        let tentativas = 0;
+        while (!window._CreateMLCEngine && tentativas < 30) {
+            await new Promise(r => setTimeout(r, 500));
+            tentativas++;
         }
 
-        const { CreateMLCEngine } = window.webllm;
+        if (!window._CreateMLCEngine) {
+            throw new Error('WebLLM não disponível. Verifica a ligação à internet e recarrega a página.');
+        }
 
-        aiEngine = await CreateMLCEngine('gemma-2-2b-it-q4f16_1-MLC', {
+        aiEngine = await window._CreateMLCEngine('gemma-2-2b-it-q4f16_1-MLC', {
             initProgressCallback: (report) => {
                 const pct = Math.min(100, Math.round((report.progress || 0) * 100));
-                document.getElementById('aiProgressBar').style.width   = pct + '%';
+                document.getElementById('aiProgressBar').style.width  = pct + '%';
                 const msg = report.text ? report.text.substring(0, 70) : pct + '%';
-                document.getElementById('aiProgressText').textContent  = msg;
+                document.getElementById('aiProgressText').textContent = msg;
             }
         });
 
@@ -5950,7 +5961,7 @@ async function initAiOffline() {
             <div style="font-size:14px;font-weight:800;color:var(--txt);margin-bottom:8px;">Erro ao carregar IA</div>
             <div style="font-size:12px;color:var(--txt2);line-height:1.6;margin-bottom:6px;">${e.message}</div>
             <div style="font-size:11px;color:var(--txt3);background:var(--p4);border-radius:10px;padding:8px;margin-bottom:16px;border:1px solid var(--border);line-height:1.5;">
-                💡 Precisas de internet para descarregar o modelo pela primeira vez.
+                💡 Precisas de internet para descarregar o modelo pela primeira vez. Recarrega a página e tenta novamente.
             </div>
             <button onclick="initAiOffline()" style="background:var(--grad-ai);color:white;border:none;border-radius:14px;padding:12px 20px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--font-body);width:100%;">🔄 Tentar novamente</button>
         `;
