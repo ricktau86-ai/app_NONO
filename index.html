@@ -3176,10 +3176,8 @@ body::after {
                         </div>
                     </div>
 
-                    <!-- Área de input -->
+                    <!-- Área de input (sem foto — modelo texto only) -->
                     <div style="display:flex; gap:8px; align-items:flex-end;">
-                        <button onclick="document.getElementById('aiPhotoInput').click()" style="width:40px; height:40px; border-radius:12px; border:1px solid var(--border2); background:var(--p4); cursor:pointer; font-size:18px; flex-shrink:0; display:flex; align-items:center; justify-content:center;">📷</button>
-                        <input type="file" id="aiPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="attachAiPhoto(this)">
                         <textarea id="aiChatInput" class="settings-input" rows="1"
                             placeholder="Escreve uma mensagem..."
                             style="flex:1; resize:none; margin:0; font-family:var(--font-body); line-height:1.5; min-height:40px; max-height:100px; overflow-y:auto;"
@@ -5911,51 +5909,50 @@ try { renderBioStatus();      } catch(e) {}
 
 // Funcionalidades offline
 /* =============================================================
-   IA OFFLINE — Chat completo com WebLLM (SmolLM2 360M)
+   IA OFFLINE — Chat completo com WebLLM (Llama 3.2 3B)
    ============================================================= */
 
-let aiEngine       = null;
-let aiChatHistory  = [];   // histórico da conversa
-let aiHcExtracted  = null;
-let aiPendingPhoto = null; // base64 da foto pendente
+let aiEngine        = null;
+let aiEngineLoading = false;
+let aiChatHistory   = [];
+let aiHcExtracted   = null;
+let aiIsReplying    = false;
 
-const AI_SYSTEM_PROMPT = `És a Nonô, uma assistente de saúde offline especializada em diabetes tipo 1 para crianças.
-Ajudas a família da Leonor (10 anos, T1D, bomba Tandem t:slim X2 com Control-IQ, sensor Dexcom G7).
+const AI_MODEL = 'Llama-3.2-3B-Instruct-q4f16_1-MLC';
 
-Podes ajudar com:
-- Estimar hidratos de carbono (HC) de refeições — sempre com TOTAL: XXg de HC no fim
-- Dúvidas sobre diabetes tipo 1, insulina, glicemia
-- O que fazer em hipoglicemia ou hiperglicemia
-- Lanches adequados, desporto, situações do dia a dia
-- Funcionamento da bomba e do sensor
+const AI_SYSTEM_PROMPT = `You are Nono, a helpful offline assistant for a family managing a child with Type 1 Diabetes. The child is Leonor, 10 years old, T1D, Tandem t:slim X2 pump with Control-IQ, Dexcom G7 sensor.
 
-Regras:
-- Responde SEMPRE em Português de Portugal, de forma simples e clara
-- Respostas curtas e diretas (máximo 150 palavras)
-- Quando estimares HC, termina SEMPRE com: TOTAL: XXg de HC
-- Lembra sempre que és uma estimativa e que os pais/médico devem validar decisões importantes
-- Nunca substituis o médico — és um apoio prático do dia a dia
+CRITICAL RULES - follow exactly:
+1. ALWAYS respond in European Portuguese (Portugal)
+2. Keep responses SHORT (max 100 words). Stop after answering. Do NOT repeat.
+3. When calculating carbs (HC): list each ingredient with its HC value, then write exactly: TOTAL: XXg HC
+4. For hypoglycemia (below 70): give immediate action first
+5. You are a practical daily tool, not a doctor
 
-Referência HC por 100g: Arroz cozido 28g | Massa cozida 25g | Pão forma 48g | Pão carcaça 53g | Batata cozida 17g | Batata frita 33g | Leite 5g | Iogurte natural 4g | Maçã/Pera 12g | Banana 20g | Laranja 9g | Uvas 16g | Morango 7g | Feijão cozido 14g | Grão 17g | Frango/carne/peixe/ovos 0g | Bolacha Maria (1un) 8g | Croissant 45g`;
+Carb reference per 100g: Rice cooked 28 | Pasta cooked 25 | White bread 48 | Roll 53 | Potato cooked 17 | Fried potato 33 | Milk 5 | Yogurt 4 | Apple/Pear 12 | Banana 20 | Orange 9 | Grapes 16 | Strawberry 7 | Beans 14 | Chickpeas 17 | Chicken/meat/fish/eggs 0 | Maria biscuit(1unit) 8 | Croissant 45 | Corn flakes 84 | OJ 200ml 20 | Milk 200ml 10`;
 
 async function initAiOffline() {
+    if (aiEngineLoading) return;
+    if (aiEngine) {
+        document.getElementById('aiNotReady').style.display    = 'none';
+        document.getElementById('aiChatInterface').style.display = 'block';
+        return;
+    }
+    aiEngineLoading = true;
     document.getElementById('aiNotReady').style.display         = 'none';
     document.getElementById('aiDownloadProgress').style.display = 'block';
-    document.getElementById('aiProgressTitle').textContent      = '⏳ A carregar modelo (~130MB na 1ª vez)...';
+    document.getElementById('aiProgressTitle').textContent      = '⏳ A carregar modelo Llama 3B (~2GB na 1ª vez)...';
 
     try {
-        if (!navigator.gpu) throw new Error('O teu browser não suporta WebGPU. Usa o Chrome 113+ ou Edge 113+.');
+        if (!navigator.gpu) throw new Error('WebGPU não suportado. Usa Chrome 113+ ou Edge 113+.');
         const adapter = await navigator.gpu.requestAdapter();
-        if (!adapter) throw new Error('GPU não disponível. Fecha outros programas e tenta de novo.');
+        if (!adapter) throw new Error('GPU indisponível. Fecha outros programas e tenta de novo.');
 
-        let tentativas = 0;
-        while (!window._CreateMLCEngine && tentativas < 30) {
-            await new Promise(r => setTimeout(r, 500));
-            tentativas++;
-        }
-        if (!window._CreateMLCEngine) throw new Error('WebLLM não carregou. Verifica a ligação à internet e recarrega a página.');
+        let t = 0;
+        while (!window._CreateMLCEngine && t < 40) { await new Promise(r => setTimeout(r, 500)); t++; }
+        if (!window._CreateMLCEngine) throw new Error('WebLLM não carregou. Verifica a ligação e recarrega a página.');
 
-        aiEngine = await window._CreateMLCEngine('SmolLM2-360M-Instruct-q4f16_1-MLC', {
+        aiEngine = await window._CreateMLCEngine(AI_MODEL, {
             initProgressCallback: (report) => {
                 const pct = Math.min(100, Math.round((report.progress || 0) * 100));
                 document.getElementById('aiProgressBar').style.width  = pct + '%';
@@ -5969,6 +5966,8 @@ async function initAiOffline() {
         showToast('🤖 IA Offline pronta!');
 
     } catch(e) {
+        aiEngine = null;
+        aiEngineLoading = false;
         document.getElementById('aiDownloadProgress').style.display = 'none';
         document.getElementById('aiNotReady').style.display         = 'block';
         document.getElementById('aiNotReady').innerHTML = `
@@ -5976,102 +5975,92 @@ async function initAiOffline() {
             <div style="font-size:14px;font-weight:800;color:var(--txt);margin-bottom:8px;">Erro ao carregar IA</div>
             <div style="font-size:12px;color:var(--txt2);line-height:1.6;margin-bottom:6px;">${e.message}</div>
             <div style="font-size:11px;color:var(--txt3);background:var(--p4);border-radius:10px;padding:8px;margin-bottom:16px;border:1px solid var(--border);line-height:1.5;">
-                💡 Precisas de internet para descarregar o modelo pela primeira vez.
+                💡 Precisas de internet para descarregar o modelo pela primeira vez (~2GB). Usa Wi-Fi.
             </div>
-            <button onclick="initAiOffline()" style="background:var(--grad-ai);color:white;border:none;border-radius:14px;padding:12px 20px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--font-body);width:100%;">🔄 Tentar novamente</button>
+            <button onclick="aiEngineLoading=false; initAiOffline();" style="background:var(--grad-ai);color:white;border:none;border-radius:14px;padding:12px 20px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--font-body);width:100%;">🔄 Tentar novamente</button>
         `;
         console.error('WebLLM erro:', e);
+        return;
     }
+    aiEngineLoading = false;
 }
 
-// Adicionar mensagem ao chat UI
 function addAiMessage(role, text, isTyping = false) {
     const container = document.getElementById('aiChatMessages');
     const div = document.createElement('div');
-    div.style.cssText = 'display:flex; gap:8px; align-items:flex-start;' + (role === 'user' ? 'flex-direction:row-reverse;' : '');
-    div.id = isTyping ? 'aiTypingIndicator' : '';
-
+    div.style.cssText = 'display:flex;gap:8px;align-items:flex-start;' + (role === 'user' ? 'flex-direction:row-reverse;' : '');
+    if (isTyping) div.id = 'aiTypingIndicator';
     const avatar = role === 'user'
         ? `<div style="width:28px;height:28px;border-radius:50%;background:var(--grad-btn);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">👤</div>`
         : `<div style="width:28px;height:28px;border-radius:50%;background:var(--grad-ai);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">🤖</div>`;
-
     const bubbleStyle = role === 'user'
         ? 'background:var(--grad-ai);color:white;border-radius:14px 14px 4px 14px;'
         : 'background:var(--p4);border:1px solid var(--border);border-radius:14px 14px 14px 4px;color:var(--txt);';
-
-    div.innerHTML = `${avatar}<div style="${bubbleStyle}padding:10px 12px;font-size:13px;line-height:1.6;max-width:85%;white-space:pre-wrap;">${text}</div>`;
+    div.innerHTML = `${avatar}<div id="${isTyping ? 'aiTypingBubble' : ''}" style="${bubbleStyle}padding:10px 12px;font-size:13px;line-height:1.6;max-width:85%;white-space:pre-wrap;">${text}</div>`;
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
     return div;
 }
 
-// Enviar mensagem
 async function sendAiMessage() {
     if (!aiEngine) { showToast('⚠️ Inicia a IA primeiro'); return; }
+    if (aiIsReplying) return;
 
     const input   = document.getElementById('aiChatInput');
     const sendBtn = document.getElementById('aiSendBtn');
     const text    = input.value.trim();
+    if (!text) return;
 
-    if (!text && !aiPendingPhoto) return;
+    document.getElementById('aiQuickSuggestions').style.display = 'none';
+    document.getElementById('aiHcDetected').style.display       = 'none';
 
-    // Esconder sugestões após primeiro envio
-    const suggestions = document.getElementById('aiQuickSuggestions');
-    if (suggestions) suggestions.style.display = 'none';
-
-    // Esconder HC anterior
-    document.getElementById('aiHcDetected').style.display = 'none';
-
-    // Montar mensagem do utilizador
-    let userText = text;
-    if (aiPendingPhoto) {
-        userText = (text || 'Analisa este prato e estima os hidratos de carbono.');
-        addAiMessage('user', '📷 ' + userText);
-        document.getElementById('aiPhotoPending').style.display = 'none';
-    } else {
-        addAiMessage('user', userText);
-    }
-
+    addAiMessage('user', text);
     input.value = '';
     input.style.height = 'auto';
     sendBtn.disabled = true;
+    aiIsReplying     = true;
 
-    // Indicador de digitação
-    const typingDiv = addAiMessage('assistant', '⏳ A pensar...', true);
+    aiChatHistory.push({ role: 'user', content: text });
+    if (aiChatHistory.length > 8) aiChatHistory = aiChatHistory.slice(-8);
 
-    // Adicionar ao histórico (mantém só últimas 6 mensagens para não sobrecarregar)
-    aiChatHistory.push({ role: 'user', content: userText });
-    if (aiChatHistory.length > 12) aiChatHistory = aiChatHistory.slice(-12);
+    // Criar bolha de resposta para streaming
+    const replyDiv = addAiMessage('assistant', '');
+    const bubble   = replyDiv.querySelector('[id=""]') || replyDiv.querySelector('div:last-child');
+    let   fullText = '';
 
     try {
-        const messages = [
-            { role: 'system', content: AI_SYSTEM_PROMPT },
-            ...aiChatHistory
-        ];
-
-        const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Tempo esgotado. Tenta uma pergunta mais curta.')), 60000)
-        );
-
-        const replyPromise = aiEngine.chat.completions.create({
-            messages,
-            temperature: 0.3,
-            max_tokens:  200,
+        const stream = await aiEngine.chat.completions.create({
+            messages: [
+                { role: 'system', content: AI_SYSTEM_PROMPT },
+                ...aiChatHistory
+            ],
+            temperature: 0.1,
+            max_tokens:  180,
+            stream:      true,
         });
 
-        const reply   = await Promise.race([replyPromise, timeoutPromise]);
-        const replyText = reply.choices[0].message.content;
+        for await (const chunk of stream) {
+            const delta = chunk.choices[0]?.delta?.content || '';
+            fullText += delta;
+            // Atualizar bolha em tempo real
+            const bubbleEl = replyDiv.querySelector('div:last-child');
+            if (bubbleEl) bubbleEl.textContent = fullText;
+            document.getElementById('aiChatMessages').scrollTop = 99999;
+            // Parar se houver repetição óbvia
+            if (fullText.length > 50) {
+                const lines = fullText.split('\n').filter(l => l.trim());
+                if (lines.length >= 4) {
+                    const last = lines[lines.length-1].trim();
+                    const repeats = lines.filter(l => l.trim() === last).length;
+                    if (repeats >= 3) { stream.controller?.abort(); break; }
+                }
+            }
+        }
 
-        // Remover indicador de digitação e mostrar resposta real
-        typingDiv.remove();
-        addAiMessage('assistant', replyText);
+        aiChatHistory.push({ role: 'assistant', content: fullText });
 
-        // Adicionar resposta ao histórico
-        aiChatHistory.push({ role: 'assistant', content: replyText });
-
-        // Detetar HC na resposta
-        const match = replyText.match(/TOTAL[:\s]+(\d+)\s*g/i)
-                   || replyText.match(/total.*?(\d+)\s*g\s*de\s*hc/i);
+        // Detetar HC
+        const match = fullText.match(/TOTAL[:\s]+(\d+)\s*g/i);
         if (match) {
             aiHcExtracted = parseInt(match[1]);
             document.getElementById('aiHcValue').textContent      = aiHcExtracted;
@@ -6079,32 +6068,27 @@ async function sendAiMessage() {
         }
 
     } catch(e) {
-        typingDiv.remove();
-        addAiMessage('assistant', '⚠️ Erro: ' + e.message);
+        const bubbleEl = replyDiv.querySelector('div:last-child');
+        if (bubbleEl) bubbleEl.textContent = '⚠️ Erro: ' + e.message;
         console.error('AI chat erro:', e);
     }
 
-    aiPendingPhoto = null;
     sendBtn.disabled = false;
+    aiIsReplying     = false;
     document.getElementById('aiChatInput').focus();
 }
 
-// Sugestão rápida
 function quickAiChat(text) {
     document.getElementById('aiChatInput').value = text;
     sendAiMessage();
 }
 
-// Limpar conversa
 function clearAiChat() {
     aiChatHistory = [];
     aiHcExtracted = null;
-    aiPendingPhoto = null;
-    document.getElementById('aiHcDetected').style.display      = 'none';
-    document.getElementById('aiPhotoPending').style.display    = 'none';
+    document.getElementById('aiHcDetected').style.display       = 'none';
     document.getElementById('aiQuickSuggestions').style.display = 'flex';
-    const container = document.getElementById('aiChatMessages');
-    container.innerHTML = `
+    document.getElementById('aiChatMessages').innerHTML = `
         <div style="display:flex;gap:8px;align-items:flex-start;">
             <div style="width:28px;height:28px;border-radius:50%;background:var(--grad-ai);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">🤖</div>
             <div style="background:var(--p4);border:1px solid var(--border);border-radius:14px 14px 14px 4px;padding:10px 12px;font-size:13px;color:var(--txt);line-height:1.6;max-width:85%;">
@@ -6113,24 +6097,8 @@ function clearAiChat() {
         </div>`;
 }
 
-// Anexar foto
-function attachAiPhoto(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-        aiPendingPhoto = e.target.result;
-        document.getElementById('aiPhotoThumb').src          = aiPendingPhoto;
-        document.getElementById('aiPhotoPending').style.display = 'flex';
-    };
-    reader.readAsDataURL(file);
-}
-
-function removeAiPhoto() {
-    aiPendingPhoto = null;
-    document.getElementById('aiPhotoPending').style.display = 'none';
-    document.getElementById('aiPhotoInput').value = '';
-}
+function attachAiPhoto(input) {}
+function removeAiPhoto() {}
 
 function useHcInR3() {
     if (!aiHcExtracted) return;
