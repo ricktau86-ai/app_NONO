@@ -3101,25 +3101,25 @@ body::after {
                     <button class="btn-primary" onclick="addOfflineAlert()">🔔 Criar Lembrete</button>
                 </div>
             </div>
-            <!-- TAB: IA Offline (Gemma / WebLLM) -->
+            <!-- TAB: IA Offline — Chat completo -->
             <div id="offSection_ai" style="display:none;">
 
                 <!-- Estado inicial: modelo não carregado -->
                 <div id="aiNotReady" style="text-align:center; padding:30px 20px;">
                     <div style="font-size:48px; margin-bottom:12px;">🤖</div>
-                    <div style="font-size:15px; font-weight:800; color:var(--txt); margin-bottom:8px;">IA Offline</div>
+                    <div style="font-size:15px; font-weight:800; color:var(--txt); margin-bottom:8px;">Assistente IA Offline</div>
                     <div style="font-size:13px; color:var(--txt2); line-height:1.6; margin-bottom:8px;">
-                        Analisa pratos, estima hidratos e responde às tuas perguntas — tudo sem internet.
+                        Chat completo sem internet — estima hidratos, tira dúvidas sobre diabetes, dá conselhos práticos.
                     </div>
                     <div style="font-size:11px; color:var(--txt3); font-weight:600; background:var(--p4); border-radius:10px; padding:8px 12px; margin-bottom:20px; border:1px solid var(--border); line-height:1.6;">
-                        📥 Primeira utilização: descarrega o modelo (~1.5GB) uma vez em Wi-Fi.<br>Depois fica sempre disponível offline.
+                        📥 1ª utilização: descarrega o modelo (~130MB) uma vez em Wi-Fi.<br>Depois fica sempre disponível offline.
                     </div>
                     <button onclick="initAiOffline()" style="background:var(--grad-ai); color:white; border:none; border-radius:14px; padding:13px 24px; font-size:14px; font-weight:800; cursor:pointer; font-family:var(--font-body); box-shadow:0 4px 14px rgba(124,58,237,0.35); width:100%;">
                         🚀 Iniciar IA Offline
                     </button>
                 </div>
 
-                <!-- Barra de progresso do download/inicialização -->
+                <!-- Barra de progresso -->
                 <div id="aiDownloadProgress" style="display:none; background:var(--card); border:1px solid var(--border2); border-radius:16px; padding:16px; margin-bottom:12px;">
                     <div style="font-size:13px; font-weight:800; color:var(--txt); margin-bottom:10px;" id="aiProgressTitle">⏳ A carregar modelo...</div>
                     <div style="background:var(--border); border-radius:99px; height:10px; overflow:hidden; margin-bottom:8px;">
@@ -3128,81 +3128,76 @@ body::after {
                     <div id="aiProgressText" style="font-size:11px; color:var(--txt3); font-weight:600; text-align:center; line-height:1.5;">A inicializar...</div>
                 </div>
 
-                <!-- Interface principal (aparece depois do modelo estar pronto) -->
+                <!-- Interface de chat (aparece depois do modelo estar pronto) -->
                 <div id="aiChatInterface" style="display:none;">
 
-                    <!-- Indicador de estado -->
-                    <div style="display:flex; align-items:center; gap:8px; background:var(--p4); border-radius:12px; padding:8px 12px; margin-bottom:12px; border:1px solid var(--border);">
-                        <div id="aiStatusDot" style="width:8px; height:8px; border-radius:50%; background:#10B981; flex-shrink:0;"></div>
-                        <div id="aiStatusText" style="font-size:12px; font-weight:700; color:var(--txt2);">IA pronta · modo offline</div>
-                    </div>
-
-                    <!-- Tabs texto / foto -->
-                    <div style="display:flex; gap:8px; margin-bottom:12px;">
-                        <button class="metric-pill active" id="aiModeText"  onclick="setAiMode('text')">✍️ Descrever prato</button>
-                        <button class="metric-pill"        id="aiModePhoto" onclick="setAiMode('photo')">📷 Foto do prato</button>
-                    </div>
-
-                    <!-- Input: texto -->
-                    <div id="aiInputText">
-                        <textarea id="aiTextInput" class="settings-input" rows="3"
-                            placeholder="Ex: Esparguete à bolonhesa, uma fatia de pão e um copo de sumo de laranja..."
-                            style="resize:none; margin-bottom:10px; font-family:var(--font-body); line-height:1.5;"></textarea>
-                    </div>
-
-                    <!-- Input: foto -->
-                    <div id="aiInputPhoto" style="display:none;">
-                        <div id="aiPhotoPreview" onclick="document.getElementById('aiPhotoFile').click()"
-                            style="background:var(--p4); border:2px dashed var(--border2); border-radius:16px; min-height:130px; display:flex; flex-direction:column; align-items:center; justify-content:center; margin-bottom:10px; cursor:pointer; overflow:hidden;">
-                            <img id="aiPhotoImg" style="display:none; width:100%; border-radius:14px; max-height:230px; object-fit:cover;">
-                            <div id="aiPhotoPlaceholder" style="text-align:center; padding:24px;">
-                                <div style="font-size:34px; margin-bottom:8px;">📷</div>
-                                <div style="font-size:13px; font-weight:700; color:var(--txt2);">Toca para tirar/escolher foto</div>
-                                <div style="font-size:11px; color:var(--txt3); margin-top:4px;">A IA analisa e estima os hidratos</div>
-                            </div>
+                    <!-- Header com estado + botão limpar -->
+                    <div style="display:flex; align-items:center; justify-content:space-between; background:var(--p4); border-radius:12px; padding:8px 12px; margin-bottom:10px; border:1px solid var(--border);">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div id="aiStatusDot" style="width:8px; height:8px; border-radius:50%; background:#10B981; flex-shrink:0;"></div>
+                            <div id="aiStatusText" style="font-size:12px; font-weight:700; color:var(--txt2);">IA pronta · offline</div>
                         </div>
-                        <input type="file" id="aiPhotoFile" accept="image/*" capture="environment" style="display:none;" onchange="previewAiPhoto(this)">
-                        <div style="font-size:10px; color:var(--txt3); font-weight:600; background:var(--p4); border-radius:10px; padding:8px 10px; margin-bottom:10px; line-height:1.5; border:1px solid var(--border);">
-                            ⚠️ Análise por foto é estimativa com margem de erro. Usa sempre o rótulo ou a base de alimentos quando possível.
-                        </div>
+                        <button onclick="clearAiChat()" style="background:transparent; border:none; font-size:11px; font-weight:700; color:var(--txt3); cursor:pointer; font-family:var(--font-body); padding:4px 8px;">🗑️ Limpar</button>
                     </div>
 
-                    <!-- Botão de análise -->
-                    <button onclick="runAiAnalysis()" id="aiAnalyzeBtn"
-                        style="background:var(--grad-ai); color:white; border:none; border-radius:14px; padding:13px; font-size:14px; font-weight:800; cursor:pointer; width:100%; font-family:var(--font-body); margin-bottom:14px; box-shadow:0 4px 14px rgba(124,58,237,0.35);">
-                        🤖 Analisar com IA
-                    </button>
-
-                    <!-- Resultado -->
-                    <div id="aiResult" style="display:none;">
-                        <div style="background:linear-gradient(135deg,rgba(168,85,247,0.08),rgba(124,58,237,0.05)); border:1.5px solid rgba(168,85,247,0.3); border-radius:16px; padding:14px; margin-bottom:10px;">
-                            <div style="font-size:12px; font-weight:800; color:#7C3AED; margin-bottom:8px;">🤖 Resposta da IA</div>
-                            <div id="aiResultText" style="font-size:13px; color:var(--txt); line-height:1.7; white-space:pre-wrap;"></div>
-                        </div>
-                        <!-- Botão para usar HC estimado na Regra de 3 -->
-                        <div id="aiHcDetected" style="display:none;">
-                            <div style="background:linear-gradient(135deg,#F0FDF4,#DCFCE7); border:1.5px solid #22C55E; border-radius:14px; padding:12px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
-                                <div>
-                                    <div style="font-size:11px; font-weight:700; color:#15803D;">Hidratos estimados</div>
-                                    <div style="font-size:26px; font-weight:800; color:#166534; line-height:1.1;"><span id="aiHcValue">0</span><span style="font-size:14px;">g HC</span></div>
-                                </div>
-                                <button onclick="useHcInR3()"
-                                    style="background:linear-gradient(135deg,#22C55E,#16A34A); color:white; border:none; border-radius:12px; padding:10px 14px; font-size:12px; font-weight:800; cursor:pointer; font-family:var(--font-body); line-height:1.4; flex-shrink:0;">
-                                    ➡️ Usar na<br>Regra de 3
-                                </button>
+                    <!-- Área de mensagens -->
+                    <div id="aiChatMessages" style="min-height:200px; max-height:380px; overflow-y:auto; margin-bottom:10px; display:flex; flex-direction:column; gap:10px; padding:4px 2px;">
+                        <!-- Mensagem de boas vindas -->
+                        <div style="display:flex; gap:8px; align-items:flex-start;">
+                            <div style="width:28px; height:28px; border-radius:50%; background:var(--grad-ai); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">🤖</div>
+                            <div style="background:var(--p4); border:1px solid var(--border); border-radius:14px 14px 14px 4px; padding:10px 12px; font-size:13px; color:var(--txt); line-height:1.6; max-width:85%;">
+                                Olá! Sou a tua assistente offline 👋<br>
+                                Posso ajudar com:<br>
+                                🍽️ Estimar HC de refeições<br>
+                                📷 Analisar foto de um prato<br>
+                                💉 Dúvidas sobre diabetes T1<br>
+                                🚨 O que fazer numa hipo/hiper<br><br>
+                                O que precisas?
                             </div>
                         </div>
                     </div>
 
-                    <!-- Sugestões rápidas -->
-                    <div style="margin-top:10px;">
-                        <div style="font-size:11px; font-weight:700; color:var(--txt3); margin-bottom:8px;">💡 Exemplos rápidos</div>
-                        <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                            <button class="ai-chip" onclick="quickAiPrompt('Um prato de arroz branco cozido com frango grelhado e salada')">🍚 Arroz + frango</button>
-                            <button class="ai-chip" onclick="quickAiPrompt('Uma sandes de fiambre com pão de forma e um copo de leite meio-gordo')">🥪 Sandes + leite</button>
-                            <button class="ai-chip" onclick="quickAiPrompt('Massa esparguete com molho de tomate e atum, uma peça de fruta e iogurte')">🍝 Massa + fruta</button>
-                            <button class="ai-chip" onclick="quickAiPrompt('Qual o melhor lanche para a Leonor antes de fazer desporto?')">⚽ Lanche desporto</button>
-                            <button class="ai-chip" onclick="quickAiPrompt('A Leonor está com hipoglicemia a 60 mg/dL. O que deve comer agora?')">🚨 Hipo urgente</button>
+                    <!-- Sugestões rápidas (desaparecem depois do 1º envio) -->
+                    <div id="aiQuickSuggestions" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+                        <button class="ai-chip" onclick="quickAiChat('Estima os HC: arroz com frango grelhado e salada')">🍚 Arroz + frango</button>
+                        <button class="ai-chip" onclick="quickAiChat('Sandes de fiambre com pão de forma e copo de leite')">🥪 Sandes + leite</button>
+                        <button class="ai-chip" onclick="quickAiChat('O que fazer quando a Leonor está com hipoglicemia?')">🚨 O que fazer numa hipo?</button>
+                        <button class="ai-chip" onclick="quickAiChat('Qual o melhor lanche antes de fazer desporto?')">⚽ Lanche pré-desporto</button>
+                        <button class="ai-chip" onclick="quickAiChat('A glicemia está a 280. O que pode ter causado?')">📈 Glicemia alta</button>
+                        <button class="ai-chip" onclick="quickAiChat('Explica o que é o fator de sensibilidade à insulina')">💡 Fator sensibilidade</button>
+                    </div>
+
+                    <!-- Foto pendente (aparece quando há foto para enviar) -->
+                    <div id="aiPhotoPending" style="display:none; margin-bottom:8px;">
+                        <div style="display:flex; align-items:center; gap:8px; background:var(--p4); border:1px solid var(--border2); border-radius:12px; padding:8px 10px;">
+                            <img id="aiPhotoThumb" style="width:44px; height:44px; border-radius:8px; object-fit:cover;">
+                            <div style="flex:1; font-size:12px; color:var(--txt2); font-weight:600;">Foto pronta para enviar</div>
+                            <button onclick="removeAiPhoto()" style="background:#FEE2E2; color:#B91C1C; border:none; border-radius:8px; padding:4px 8px; font-size:11px; font-weight:800; cursor:pointer; font-family:var(--font-body);">✕</button>
+                        </div>
+                    </div>
+
+                    <!-- Área de input -->
+                    <div style="display:flex; gap:8px; align-items:flex-end;">
+                        <button onclick="document.getElementById('aiPhotoInput').click()" style="width:40px; height:40px; border-radius:12px; border:1px solid var(--border2); background:var(--p4); cursor:pointer; font-size:18px; flex-shrink:0; display:flex; align-items:center; justify-content:center;">📷</button>
+                        <input type="file" id="aiPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="attachAiPhoto(this)">
+                        <textarea id="aiChatInput" class="settings-input" rows="1"
+                            placeholder="Escreve uma mensagem..."
+                            style="flex:1; resize:none; margin:0; font-family:var(--font-body); line-height:1.5; min-height:40px; max-height:100px; overflow-y:auto;"
+                            onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); sendAiMessage();}"
+                            oninput="this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,100)+'px';"></textarea>
+                        <button onclick="sendAiMessage()" id="aiSendBtn" style="width:40px; height:40px; border-radius:12px; border:none; background:var(--grad-ai); color:white; cursor:pointer; font-size:18px; flex-shrink:0; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(124,58,237,0.35);">➤</button>
+                    </div>
+
+                    <!-- Botão HC detectado (aparece quando a IA estima HC) -->
+                    <div id="aiHcDetected" style="display:none; margin-top:10px;">
+                        <div style="background:linear-gradient(135deg,#F0FDF4,#DCFCE7); border:1.5px solid #22C55E; border-radius:14px; padding:12px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                            <div>
+                                <div style="font-size:11px; font-weight:700; color:#15803D;">Hidratos estimados pela IA</div>
+                                <div style="font-size:26px; font-weight:800; color:#166534; line-height:1.1;"><span id="aiHcValue">0</span><span style="font-size:14px;">g HC</span></div>
+                            </div>
+                            <button onclick="useHcInR3()" style="background:linear-gradient(135deg,#22C55E,#16A34A); color:white; border:none; border-radius:12px; padding:10px 14px; font-size:12px; font-weight:800; cursor:pointer; font-family:var(--font-body); line-height:1.4; flex-shrink:0;">
+                                ➡️ Usar na<br>Regra de 3
+                            </button>
                         </div>
                     </div>
 
@@ -5916,45 +5911,55 @@ try { renderBioStatus();      } catch(e) {}
 
 // Funcionalidades offline
 /* =============================================================
-   IA OFFLINE — WebLLM (Gemma-2 2B via MLC)
+   IA OFFLINE — Chat completo com WebLLM (SmolLM2 360M)
    ============================================================= */
 
-let aiEngine        = null;
-let aiCurrentMode   = 'text';
-let aiHcExtracted   = null;
+let aiEngine       = null;
+let aiChatHistory  = [];   // histórico da conversa
+let aiHcExtracted  = null;
+let aiPendingPhoto = null; // base64 da foto pendente
+
+const AI_SYSTEM_PROMPT = `És a Nonô, uma assistente de saúde offline especializada em diabetes tipo 1 para crianças.
+Ajudas a família da Leonor (10 anos, T1D, bomba Tandem t:slim X2 com Control-IQ, sensor Dexcom G7).
+
+Podes ajudar com:
+- Estimar hidratos de carbono (HC) de refeições — sempre com TOTAL: XXg de HC no fim
+- Dúvidas sobre diabetes tipo 1, insulina, glicemia
+- O que fazer em hipoglicemia ou hiperglicemia
+- Lanches adequados, desporto, situações do dia a dia
+- Funcionamento da bomba e do sensor
+
+Regras:
+- Responde SEMPRE em Português de Portugal, de forma simples e clara
+- Respostas curtas e diretas (máximo 150 palavras)
+- Quando estimares HC, termina SEMPRE com: TOTAL: XXg de HC
+- Lembra sempre que és uma estimativa e que os pais/médico devem validar decisões importantes
+- Nunca substituis o médico — és um apoio prático do dia a dia
+
+Referência HC por 100g: Arroz cozido 28g | Massa cozida 25g | Pão forma 48g | Pão carcaça 53g | Batata cozida 17g | Batata frita 33g | Leite 5g | Iogurte natural 4g | Maçã/Pera 12g | Banana 20g | Laranja 9g | Uvas 16g | Morango 7g | Feijão cozido 14g | Grão 17g | Frango/carne/peixe/ovos 0g | Bolacha Maria (1un) 8g | Croissant 45g`;
 
 async function initAiOffline() {
-    document.getElementById('aiNotReady').style.display        = 'none';
+    document.getElementById('aiNotReady').style.display         = 'none';
     document.getElementById('aiDownloadProgress').style.display = 'block';
-    document.getElementById('aiProgressTitle').textContent      = '⏳ A carregar modelo (pode demorar na 1ª vez)...';
+    document.getElementById('aiProgressTitle').textContent      = '⏳ A carregar modelo (~130MB na 1ª vez)...';
 
     try {
-        // Aguardar até o WebLLM estar pronto (carregado pelo script module no head)
+        if (!navigator.gpu) throw new Error('O teu browser não suporta WebGPU. Usa o Chrome 113+ ou Edge 113+.');
+        const adapter = await navigator.gpu.requestAdapter();
+        if (!adapter) throw new Error('GPU não disponível. Fecha outros programas e tenta de novo.');
+
         let tentativas = 0;
         while (!window._CreateMLCEngine && tentativas < 30) {
             await new Promise(r => setTimeout(r, 500));
             tentativas++;
         }
+        if (!window._CreateMLCEngine) throw new Error('WebLLM não carregou. Verifica a ligação à internet e recarrega a página.');
 
-        if (!window._CreateMLCEngine) {
-            throw new Error('WebLLM não disponível. Verifica a ligação à internet e recarrega a página.');
-        }
-
-        // Verificar suporte a WebGPU (obrigatório para WebLLM)
-        if (!navigator.gpu) {
-            throw new Error('O teu browser não suporta WebGPU. Usa o Chrome 113+ ou Edge 113+ para esta funcionalidade.');
-        }
-
-        const adapter = await navigator.gpu.requestAdapter();
-        if (!adapter) {
-            throw new Error('Não foi possível aceder à GPU. Tenta fechar outros programas e recarrega a página.');
-        }
-
-        aiEngine = await window._CreateMLCEngine('Llama-3.2-1B-Instruct-q4f16_1-MLC', {
+        aiEngine = await window._CreateMLCEngine('SmolLM2-360M-Instruct-q4f16_1-MLC', {
             initProgressCallback: (report) => {
                 const pct = Math.min(100, Math.round((report.progress || 0) * 100));
                 document.getElementById('aiProgressBar').style.width  = pct + '%';
-                const msg = report.text ? report.text.substring(0, 70) : pct + '%';
+                const msg = report.text ? report.text.substring(0, 65) : pct + '%';
                 document.getElementById('aiProgressText').textContent = msg;
             }
         });
@@ -5971,7 +5976,7 @@ async function initAiOffline() {
             <div style="font-size:14px;font-weight:800;color:var(--txt);margin-bottom:8px;">Erro ao carregar IA</div>
             <div style="font-size:12px;color:var(--txt2);line-height:1.6;margin-bottom:6px;">${e.message}</div>
             <div style="font-size:11px;color:var(--txt3);background:var(--p4);border-radius:10px;padding:8px;margin-bottom:16px;border:1px solid var(--border);line-height:1.5;">
-                💡 Precisas de internet para descarregar o modelo pela primeira vez. Recarrega a página e tenta novamente.
+                💡 Precisas de internet para descarregar o modelo pela primeira vez.
             </div>
             <button onclick="initAiOffline()" style="background:var(--grad-ai);color:white;border:none;border-radius:14px;padding:12px 20px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--font-body);width:100%;">🔄 Tentar novamente</button>
         `;
@@ -5979,116 +5984,159 @@ async function initAiOffline() {
     }
 }
 
-function setAiMode(mode) {
-    aiCurrentMode = mode;
-    document.getElementById('aiInputText').style.display  = mode === 'text'  ? 'block' : 'none';
-    document.getElementById('aiInputPhoto').style.display = mode === 'photo' ? 'block' : 'none';
-    document.getElementById('aiModeText').classList.toggle('active',  mode === 'text');
-    document.getElementById('aiModePhoto').classList.toggle('active', mode === 'photo');
+// Adicionar mensagem ao chat UI
+function addAiMessage(role, text, isTyping = false) {
+    const container = document.getElementById('aiChatMessages');
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex; gap:8px; align-items:flex-start;' + (role === 'user' ? 'flex-direction:row-reverse;' : '');
+    div.id = isTyping ? 'aiTypingIndicator' : '';
+
+    const avatar = role === 'user'
+        ? `<div style="width:28px;height:28px;border-radius:50%;background:var(--grad-btn);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">👤</div>`
+        : `<div style="width:28px;height:28px;border-radius:50%;background:var(--grad-ai);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">🤖</div>`;
+
+    const bubbleStyle = role === 'user'
+        ? 'background:var(--grad-ai);color:white;border-radius:14px 14px 4px 14px;'
+        : 'background:var(--p4);border:1px solid var(--border);border-radius:14px 14px 14px 4px;color:var(--txt);';
+
+    div.innerHTML = `${avatar}<div style="${bubbleStyle}padding:10px 12px;font-size:13px;line-height:1.6;max-width:85%;white-space:pre-wrap;">${text}</div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+    return div;
 }
 
-function previewAiPhoto(input) {
+// Enviar mensagem
+async function sendAiMessage() {
+    if (!aiEngine) { showToast('⚠️ Inicia a IA primeiro'); return; }
+
+    const input   = document.getElementById('aiChatInput');
+    const sendBtn = document.getElementById('aiSendBtn');
+    const text    = input.value.trim();
+
+    if (!text && !aiPendingPhoto) return;
+
+    // Esconder sugestões após primeiro envio
+    const suggestions = document.getElementById('aiQuickSuggestions');
+    if (suggestions) suggestions.style.display = 'none';
+
+    // Esconder HC anterior
+    document.getElementById('aiHcDetected').style.display = 'none';
+
+    // Montar mensagem do utilizador
+    let userText = text;
+    if (aiPendingPhoto) {
+        userText = (text || 'Analisa este prato e estima os hidratos de carbono.');
+        addAiMessage('user', '📷 ' + userText);
+        document.getElementById('aiPhotoPending').style.display = 'none';
+    } else {
+        addAiMessage('user', userText);
+    }
+
+    input.value = '';
+    input.style.height = 'auto';
+    sendBtn.disabled = true;
+
+    // Indicador de digitação
+    const typingDiv = addAiMessage('assistant', '⏳ A pensar...', true);
+
+    // Adicionar ao histórico (mantém só últimas 6 mensagens para não sobrecarregar)
+    aiChatHistory.push({ role: 'user', content: userText });
+    if (aiChatHistory.length > 12) aiChatHistory = aiChatHistory.slice(-12);
+
+    try {
+        const messages = [
+            { role: 'system', content: AI_SYSTEM_PROMPT },
+            ...aiChatHistory
+        ];
+
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Tempo esgotado. Tenta uma pergunta mais curta.')), 60000)
+        );
+
+        const replyPromise = aiEngine.chat.completions.create({
+            messages,
+            temperature: 0.3,
+            max_tokens:  200,
+        });
+
+        const reply   = await Promise.race([replyPromise, timeoutPromise]);
+        const replyText = reply.choices[0].message.content;
+
+        // Remover indicador de digitação e mostrar resposta real
+        typingDiv.remove();
+        addAiMessage('assistant', replyText);
+
+        // Adicionar resposta ao histórico
+        aiChatHistory.push({ role: 'assistant', content: replyText });
+
+        // Detetar HC na resposta
+        const match = replyText.match(/TOTAL[:\s]+(\d+)\s*g/i)
+                   || replyText.match(/total.*?(\d+)\s*g\s*de\s*hc/i);
+        if (match) {
+            aiHcExtracted = parseInt(match[1]);
+            document.getElementById('aiHcValue').textContent      = aiHcExtracted;
+            document.getElementById('aiHcDetected').style.display = 'block';
+        }
+
+    } catch(e) {
+        typingDiv.remove();
+        addAiMessage('assistant', '⚠️ Erro: ' + e.message);
+        console.error('AI chat erro:', e);
+    }
+
+    aiPendingPhoto = null;
+    sendBtn.disabled = false;
+    document.getElementById('aiChatInput').focus();
+}
+
+// Sugestão rápida
+function quickAiChat(text) {
+    document.getElementById('aiChatInput').value = text;
+    sendAiMessage();
+}
+
+// Limpar conversa
+function clearAiChat() {
+    aiChatHistory = [];
+    aiHcExtracted = null;
+    aiPendingPhoto = null;
+    document.getElementById('aiHcDetected').style.display      = 'none';
+    document.getElementById('aiPhotoPending').style.display    = 'none';
+    document.getElementById('aiQuickSuggestions').style.display = 'flex';
+    const container = document.getElementById('aiChatMessages');
+    container.innerHTML = `
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--grad-ai);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">🤖</div>
+            <div style="background:var(--p4);border:1px solid var(--border);border-radius:14px 14px 14px 4px;padding:10px 12px;font-size:13px;color:var(--txt);line-height:1.6;max-width:85%;">
+                Conversa limpa! Em que posso ajudar? 😊
+            </div>
+        </div>`;
+}
+
+// Anexar foto
+function attachAiPhoto(input) {
     const file = input.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = e => {
-        const img = document.getElementById('aiPhotoImg');
-        img.src = e.target.result;
-        img.style.display = 'block';
-        document.getElementById('aiPhotoPlaceholder').style.display = 'none';
+        aiPendingPhoto = e.target.result;
+        document.getElementById('aiPhotoThumb').src          = aiPendingPhoto;
+        document.getElementById('aiPhotoPending').style.display = 'flex';
     };
     reader.readAsDataURL(file);
 }
 
-function quickAiPrompt(text) {
-    setAiMode('text');
-    document.getElementById('aiTextInput').value = text;
-    runAiAnalysis();
-}
-
-async function runAiAnalysis() {
-    if (!aiEngine) { showToast('⚠️ Inicia primeiro a IA Offline'); return; }
-
-    const btn = document.getElementById('aiAnalyzeBtn');
-    btn.disabled    = true;
-    btn.textContent = '⏳ A analisar...';
-    document.getElementById('aiResult').style.display      = 'none';
-    document.getElementById('aiHcDetected').style.display  = 'none';
-    aiHcExtracted = null;
-
-    try {
-        let userMessage = '';
-
-        if (aiCurrentMode === 'text') {
-            const input = document.getElementById('aiTextInput').value.trim();
-            if (!input) { showToast('Descreve o prato primeiro'); btn.disabled = false; btn.textContent = '🤖 Analisar com IA'; return; }
-            userMessage = input;
-        } else {
-            const img = document.getElementById('aiPhotoImg');
-            if (!img.src || img.style.display === 'none') {
-                showToast('Escolhe uma foto primeiro');
-                btn.disabled    = false;
-                btn.textContent = '🤖 Analisar com IA';
-                return;
-            }
-            userMessage = 'Analisa esta refeição fotografada. Identifica os alimentos visíveis e estima os hidratos de carbono totais. Sê honesto se não conseguires identificar algo.';
-        }
-
-        const systemPrompt = `És um assistente especializado em diabetes tipo 1 para crianças, a ajudar a família da Leonor (10 anos, T1D, bomba Tandem t:slim X2 com Control-IQ, sensor Dexcom G7).
-A tua função:
-1. Estimar hidratos de carbono (HC) de refeições descritas ou fotografadas
-2. Detalhar os HC de cada componente separadamente
-3. Dar conselhos práticos de gestão de glicemia
-4. Responder sempre em Português de Portugal, de forma clara e simples para pais e criança
-5. Terminar SEMPRE com uma linha no formato exato: TOTAL: XXg de HC
-6. Lembrar sempre que é uma estimativa e deve ser validada pelos pais/médico
-
-Referência rápida de HC por 100g:
-Arroz cozido 28g | Massa cozida 25g | Pão de forma 48g | Pão carcaça 53g | Batata cozida 17g | Batata frita 33g
-Leite meio-gordo 5g | Iogurte natural 4g | Iogurte achocolatado 14g | Queijo flamengo 1g | Natas 3g
-Maçã/Pera 12g | Banana 20g | Laranja 9g | Uvas 16g | Morango 7g | Melancia 7g | Kiwi 10g
-Feijão cozido 14g | Grão cozido 17g | Lentilhas cozidas 16g | Ervilhas 9g
-Frango/carne/peixe/ovos 0g | Azeite/manteiga 0g | Alface/pepino/tomate/cenoura <5g
-Sumo laranja natural 200ml 20g | Leite 200ml 10g | Refrigerante 200ml 22g | Água 0g
-Bolachas Maria (1 un) 8g | Croissant 45g | Cereais corn flakes 84g`;
-
-        const reply = await aiEngine.chat.completions.create({
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user',   content: userMessage }
-            ],
-            temperature: 0.2,
-            max_tokens:  500,
-        });
-
-        const text = reply.choices[0].message.content;
-        document.getElementById('aiResultText').textContent = text;
-        document.getElementById('aiResult').style.display   = 'block';
-
-        const match = text.match(/TOTAL[:\s]+(\d+)\s*g/i)
-                   || text.match(/(\d+)\s*g\s*de\s*HC/i)
-                   || text.match(/total.*?(\d+)\s*g/i);
-        if (match) {
-            aiHcExtracted = parseInt(match[1]);
-            document.getElementById('aiHcValue').textContent       = aiHcExtracted;
-            document.getElementById('aiHcDetected').style.display  = 'block';
-        }
-
-    } catch(e) {
-        document.getElementById('aiResultText').textContent = '⚠️ Erro: ' + e.message;
-        document.getElementById('aiResult').style.display   = 'block';
-        console.error('AI análise erro:', e);
-    }
-
-    btn.disabled    = false;
-    btn.textContent = '🤖 Analisar com IA';
+function removeAiPhoto() {
+    aiPendingPhoto = null;
+    document.getElementById('aiPhotoPending').style.display = 'none';
+    document.getElementById('aiPhotoInput').value = '';
 }
 
 function useHcInR3() {
     if (!aiHcExtracted) return;
     showOffTab('r3');
-    document.getElementById('off_r3_hc').value   = aiHcExtracted;
-    document.getElementById('off_r3_peso').value  = 100;
+    document.getElementById('off_r3_hc').value  = aiHcExtracted;
+    document.getElementById('off_r3_peso').value = 100;
     calcOffR3();
     showToast('✅ HC transferido para a Regra de 3');
 }
