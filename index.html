@@ -3176,8 +3176,14 @@ body::after {
                         </div>
                     </div>
 
-                    <!-- Área de input (sem foto — modelo texto only) -->
-                    <div style="display:flex; gap:8px; align-items:flex-end;">
+                    <!-- Inputs de ficheiro para foto offline -->
+                    <input type="file" id="aiOfflineCameraInput" accept="image/*" capture="environment" style="display:none;" onchange="attachAiPhoto(this)">
+                    <input type="file" id="aiOfflineGalleryInput" accept="image/*" style="display:none;" onchange="attachAiPhoto(this)">
+
+                    <!-- Área de input com botões de foto -->
+                    <div style="display:flex; gap:6px; align-items:flex-end;">
+                        <button onclick="document.getElementById('aiOfflineCameraInput').click()" title="Tirar foto" style="width:40px; height:40px; border-radius:12px; border:1px solid var(--border2); background:var(--p4); color:var(--txt2); cursor:pointer; font-size:18px; flex-shrink:0; display:flex; align-items:center; justify-content:center;">📷</button>
+                        <button onclick="document.getElementById('aiOfflineGalleryInput').click()" title="Escolher da galeria" style="width:40px; height:40px; border-radius:12px; border:1px solid var(--border2); background:var(--p4); color:var(--txt2); cursor:pointer; font-size:18px; flex-shrink:0; display:flex; align-items:center; justify-content:center;">🖼️</button>
                         <textarea id="aiChatInput" class="settings-input" rows="1"
                             placeholder="Escreve uma mensagem..."
                             style="flex:1; resize:none; margin:0; font-family:var(--font-body); line-height:1.5; min-height:40px; max-height:100px; overflow-y:auto;"
@@ -6009,24 +6015,64 @@ async function sendAiMessage() {
     const input   = document.getElementById('aiChatInput');
     const sendBtn = document.getElementById('aiSendBtn');
     const text    = input.value.trim();
-    if (!text) return;
+    const hasPhoto = !!aiPendingPhotoBase64;
+    if (!text && !hasPhoto) return;
 
     document.getElementById('aiQuickSuggestions').style.display = 'none';
     document.getElementById('aiHcDetected').style.display       = 'none';
 
-    addAiMessage('user', text);
+    // Mostrar mensagem do utilizador
+    const userLabel = hasPhoto ? (text ? `📸 ${text}` : '📸 Foto enviada') : text;
+    addAiMessage('user', userLabel);
+
+    // Se há foto, mostrá-la na conversa
+    if (hasPhoto) {
+        const imgDiv = document.createElement('div');
+        imgDiv.style.cssText = 'display:flex;gap:8px;align-items:flex-start;flex-direction:row-reverse;';
+        imgDiv.innerHTML = `<img src="${aiPendingPhotoBase64}" style="max-width:160px;max-height:160px;border-radius:10px;object-fit:cover;border:1px solid var(--border);">`;
+        document.getElementById('aiChatMessages').appendChild(imgDiv);
+    }
+
     input.value = '';
     input.style.height = 'auto';
     sendBtn.disabled = true;
     aiIsReplying     = true;
 
-    aiChatHistory.push({ role: 'user', content: text });
+    // Limpar foto pendente
+    const photoB64 = aiPendingPhotoBase64;
+    removeAiPhoto();
+
+    // Construir conteúdo da mensagem (texto + foto se existir)
+    let userContent;
+    if (photoB64) {
+        const base64Data = photoB64.split(',')[1];
+        userContent = [
+            { type: 'text', text: text || 'Analisa esta foto de comida e estima os hidratos de carbono.' },
+            { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64Data}` } }
+        ];
+    } else {
+        userContent = text;
+    }
+
+    aiChatHistory.push({ role: 'user', content: userContent });
     if (aiChatHistory.length > 8) aiChatHistory = aiChatHistory.slice(-8);
 
-    // Criar bolha de resposta para streaming
+    // Criar bolha de resposta com ID único para o bubble
+    const bubbleId = 'aiBubble_' + Date.now();
     const replyDiv = addAiMessage('assistant', '');
-    const bubble   = replyDiv.querySelector('[id=""]') || replyDiv.querySelector('div:last-child');
-    let   fullText = '';
+    // Atribuir ID ao elemento da bolha (segundo div dentro do replyDiv)
+    const bubbleEl = replyDiv.querySelectorAll('div')[1];
+    if (bubbleEl) bubbleEl.id = bubbleId;
+
+    let fullText = '';
+
+    // Função auxiliar para limpar junk tokens do modelo
+    function sanitizeToken(t) {
+        // Remover tokens de controlo e caracteres não imprimíveis
+        return t.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, '')
+                .replace(/<\|[^|]*\|>/g, '') // tokens especiais tipo <|eot_id|>
+                .replace(/\[INST\]|\[\/INST\]|<<SYS>>|<\/SYS>>/g, ''); // artefactos de prompt
+    }
 
     try {
         const stream = await aiEngine.chat.completions.create({
@@ -6035,27 +6081,38 @@ async function sendAiMessage() {
                 ...aiChatHistory
             ],
             temperature: 0.1,
-            max_tokens:  180,
+            max_tokens:  220,
             stream:      true,
         });
 
         for await (const chunk of stream) {
-            const delta = chunk.choices[0]?.delta?.content || '';
+            const rawDelta = chunk.choices[0]?.delta?.content || '';
+            const delta = sanitizeToken(rawDelta);
             fullText += delta;
-            // Atualizar bolha em tempo real
-            const bubbleEl = replyDiv.querySelector('div:last-child');
-            if (bubbleEl) bubbleEl.textContent = fullText;
+
+            // Atualizar bolha com ID correto
+            const el = document.getElementById(bubbleId);
+            if (el) el.textContent = fullText;
             document.getElementById('aiChatMessages').scrollTop = 99999;
-            // Parar se houver repetição óbvia
-            if (fullText.length > 50) {
-                const lines = fullText.split('\n').filter(l => l.trim());
+
+            // Parar se detetar repetição
+            if (fullText.length > 80) {
+                const lines = fullText.split('\n').filter(l => l.trim().length > 3);
                 if (lines.length >= 4) {
-                    const last = lines[lines.length-1].trim();
+                    const last = lines[lines.length - 1].trim();
                     const repeats = lines.filter(l => l.trim() === last).length;
-                    if (repeats >= 3) { stream.controller?.abort(); break; }
+                    if (repeats >= 3) { try { stream.controller?.abort(); } catch(_){} break; }
                 }
+                // Parar também se houver sequências repetitivas de chars
+                const tail = fullText.slice(-60);
+                if (/(.{4,})\1{3,}/.test(tail)) { try { stream.controller?.abort(); } catch(_){} break; }
             }
         }
+
+        // Limpar resposta final de eventuais artefactos
+        fullText = fullText.replace(/<\|[^|]*\|>/g, '').replace(/\[INST\]|\[\/INST\]/g, '').trim();
+        const el = document.getElementById(bubbleId);
+        if (el) el.textContent = fullText || '(sem resposta)';
 
         aiChatHistory.push({ role: 'assistant', content: fullText });
 
@@ -6068,8 +6125,8 @@ async function sendAiMessage() {
         }
 
     } catch(e) {
-        const bubbleEl = replyDiv.querySelector('div:last-child');
-        if (bubbleEl) bubbleEl.textContent = '⚠️ Erro: ' + e.message;
+        const el = document.getElementById(bubbleId);
+        if (el) el.textContent = '⚠️ Erro: ' + e.message;
         console.error('AI chat erro:', e);
     }
 
@@ -6097,8 +6154,27 @@ function clearAiChat() {
         </div>`;
 }
 
-function attachAiPhoto(input) {}
-function removeAiPhoto() {}
+let aiPendingPhotoBase64 = null;
+
+function attachAiPhoto(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = e => {
+        aiPendingPhotoBase64 = e.target.result;
+        document.getElementById('aiPhotoThumb').src = aiPendingPhotoBase64;
+        document.getElementById('aiPhotoPending').style.display = 'block';
+        document.getElementById('aiQuickSuggestions').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+    input.value = '';
+}
+
+function removeAiPhoto() {
+    aiPendingPhotoBase64 = null;
+    document.getElementById('aiPhotoPending').style.display = 'none';
+    document.getElementById('aiPhotoThumb').src = '';
+}
 
 function useHcInR3() {
     if (!aiHcExtracted) return;
