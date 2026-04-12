@@ -2248,13 +2248,13 @@ body::after {
     <!-- WebLLM — carregado como ES Module e exposto globalmente -->
     <script type="module">
         try {
-            const webllm = await import('https://esm.sh/@mlc-ai/web-llm@0.2.79');
+            const webllm = await import('https://esm.run/@mlc-ai/web-llm@0.2.82');
             window._CreateMLCEngine = webllm.CreateMLCEngine;
             window._webllmReady = true;
-            console.log('WebLLM carregado com sucesso');
+            console.log('[WebLLM] Carregado com sucesso (0.2.82)');
         } catch(e) {
             window._webllmReady = false;
-            console.warn('WebLLM não carregado (sem internet?):', e.message);
+            console.warn('[WebLLM] Falha ao carregar:', e.message);
         }
     </script>
 </head>
@@ -5940,7 +5940,17 @@ async function initAiOffline() {
             throw new Error('WebLLM não disponível. Verifica a ligação à internet e recarrega a página.');
         }
 
-        aiEngine = await window._CreateMLCEngine('gemma-2-2b-it-q4f16_1-MLC', {
+        // Verificar suporte a WebGPU (obrigatório para WebLLM)
+        if (!navigator.gpu) {
+            throw new Error('O teu browser não suporta WebGPU. Usa o Chrome 113+ ou Edge 113+ para esta funcionalidade.');
+        }
+
+        const adapter = await navigator.gpu.requestAdapter();
+        if (!adapter) {
+            throw new Error('Não foi possível aceder à GPU. Tenta fechar outros programas e recarrega a página.');
+        }
+
+        aiEngine = await window._CreateMLCEngine('Llama-3.2-1B-Instruct-q4f16_1-MLC', {
             initProgressCallback: (report) => {
                 const pct = Math.min(100, Math.round((report.progress || 0) * 100));
                 document.getElementById('aiProgressBar').style.width  = pct + '%';
