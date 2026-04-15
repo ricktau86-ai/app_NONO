@@ -4077,6 +4077,61 @@ function saveInventory() {
         .catch(err => console.error("Inventário:", err));
 }
 
+
+/* =============================================================
+   MODAL UNIVERSAL
+   ============================================================= */
+function openModal(title, bodyHtml) {
+    const overlay   = document.getElementById('universalModal');
+    const box       = document.getElementById('modalContentBox');
+    const titleEl   = document.getElementById('modalTitle');
+    const bodyEl    = document.getElementById('modalBody');
+    const imgBox    = document.getElementById('modalImageBox');
+
+    if (!overlay || !box) return;
+
+    if (titleEl) titleEl.textContent = title || '';
+    if (bodyEl)  bodyEl.innerHTML    = bodyHtml || '';
+    if (imgBox)  imgBox.style.display = 'none';
+
+    box.style.display     = 'block';
+    overlay.style.display = 'flex';
+
+    // Fechar ao clicar no overlay (fora do modal)
+    overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
+
+    // Prevenir scroll do body
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+    const overlay = document.getElementById('universalModal');
+    const box     = document.getElementById('modalContentBox');
+    const imgBox  = document.getElementById('modalImageBox');
+
+    if (overlay) { overlay.style.display = 'none'; overlay.onclick = null; }
+    if (box)     box.style.display     = 'none';
+    if (imgBox)  imgBox.style.display  = 'none';
+
+    document.body.style.overflow = '';
+}
+
+function openImageModal(src) {
+    const overlay = document.getElementById('universalModal');
+    const box     = document.getElementById('modalContentBox');
+    const imgBox  = document.getElementById('modalImageBox');
+    const img     = document.getElementById('modalFullImg');
+
+    if (!overlay || !imgBox) return;
+
+    if (box)    box.style.display    = 'none';
+    if (img)    img.src              = src;
+    imgBox.style.display             = 'block';
+    overlay.style.display            = 'flex';
+    overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
+    document.body.style.overflow     = 'hidden';
+}
+
 function showStockSummary() {
     let html = '<div style="font-size:13px;">';
     if (!inventoryData.length) { html += '<p style="color:var(--txt3); font-weight:600;">Sem items na despensa.</p>'; }
