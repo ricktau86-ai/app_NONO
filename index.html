@@ -43,7 +43,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Fallback: se offline e fontes não em cache, usa system fonts (já definido no CSS) -->
 
-    <!-- WebLLM — IA local offline (Gemma 2B via WebGPU) -->
+    <!-- WebLLM — IA local offline (Phi-3.5 Mini via WebGPU) -->
     <script type="module">
         // Importar WebLLM como módulo ES (carregado apenas quando necessário)
         window._webllmReady = false;
@@ -3172,12 +3172,12 @@ body::after {
                 <!-- Header -->
                 <div style="background:linear-gradient(135deg,#A855F7,#7C3AED); border-radius:var(--radius); padding:16px 18px; margin-bottom:14px; box-shadow:0 8px 24px rgba(168,85,247,0.35);">
                     <div style="font-family:var(--font-display); font-size:22px; color:white; letter-spacing:0.5px; margin-bottom:4px;">IA Local Offline 🤖</div>
-                    <div style="font-size:12px; color:rgba(255,255,255,0.8); font-weight:600;">Modelo Gemma 2B · Corre no teu telemóvel · Sem internet</div>
+                    <div style="font-size:12px; color:rgba(255,255,255,0.8); font-weight:600;">Modelo Phi-3.5 Mini · Corre no teu telemóvel · Sem internet</div>
                 </div>
 
                 <!-- Aviso download -->
                 <div id="offAiDownloadWarn" style="background:#FFF7ED; border:1.5px solid #FED7AA; border-radius:14px; padding:12px 14px; margin-bottom:14px; font-size:12px; color:#92400E; font-weight:600; line-height:1.6;">
-                    ⚠️ <strong>Primeira utilização:</strong> O modelo Gemma 2B precisa de ser descarregado (~1.5GB). Isto acontece uma só vez e fica em cache no browser.<br>
+                    ⚠️ <strong>Primeira utilização:</strong> O modelo Phi-3.5 Mini precisa de ser descarregado (~2.3GB). Isto acontece uma só vez e fica em cache no browser.<br>
                     Precisa de um browser moderno (Chrome 113+) com suporte a WebGPU.<br>
                     <strong>Não é necessário para o Assistente IA online</strong> (esse usa a API OpenAI).
                 </div>
@@ -3200,11 +3200,17 @@ body::after {
                     </div>
                 </div>
 
-                <!-- Botão carregar modelo -->
                 <button id="offAiLoadBtn" class="btn-primary"
-                    style="background:linear-gradient(135deg,#A855F7,#7C3AED); box-shadow:0 6px 20px rgba(168,85,247,0.4); margin-bottom:14px;"
+                    style="background:linear-gradient(135deg,#A855F7,#7C3AED); box-shadow:0 6px 20px rgba(168,85,247,0.4); margin-bottom:8px;"
                     onclick="loadOfflineAI()">
-                    ⬇️ Carregar Modelo Gemma 2B (~1.5GB)
+                    ⬇️ Carregar Modelo Phi-3.5 Mini (~2.3GB)
+                </button>
+
+                <!-- Botão limpar cache -->
+                <button id="offAiClearCacheBtn" class="btn-primary"
+                    style="background:linear-gradient(135deg,#6B7280,#4B5563); box-shadow:0 4px 12px rgba(107,114,128,0.3); margin-bottom:14px; font-size:13px;"
+                    onclick="clearOfflineAICache()">
+                    🗑️ Limpar Cache do Modelo
                 </button>
 
                 <!-- Chat container -->
@@ -5506,7 +5512,7 @@ function renderOffPlanTable() {
 
 
 /* =============================================================
-   IA LOCAL OFFLINE — WebLLM (Gemma 2B via WebGPU)
+   IA LOCAL OFFLINE — WebLLM (Phi-3.5 Mini via WebGPU)
    Documentação: https://github.com/mlc-ai/web-llm
    ============================================================= */
 
@@ -5554,8 +5560,7 @@ async function loadOfflineAI() {
             if (statusSub) statusSub.textContent = report.text || ('A descarregar modelo: ' + pct + '%');
         };
 
-        // Usar Gemma 2B — bom equilíbrio entre tamanho e qualidade
-        // Alternativa mais leve: 'Phi-3.5-mini-instruct-q4f16_1-MLC'
+        // Usar Phi-3.5 Mini — mais estável em mobile, boa qualidade
         offlineEngine = await CreateMLCEngine(
             WEBLLM_MODEL_ID,
             { initProgressCallback }
@@ -5564,8 +5569,9 @@ async function loadOfflineAI() {
         offlineAIReady   = true;
         offlineAILoading = false;
 
-        // Marcar como em cache para futuras sessões
+        // Marcar como em cache nos 3 métodos (redundância máxima)
         try { localStorage.setItem(WEBLLM_CACHE_KEY, 'true'); } catch(e) {}
+        _idbSetCached(true).catch(() => {});
 
         // Mostrar chat
         _showOfflineAIChat();
@@ -5574,8 +5580,9 @@ async function loadOfflineAI() {
     } catch(err) {
         offlineAILoading = false;
         console.error('[WebLLM] Erro:', err);
-        // Limpar flag de cache — pode estar corrompida
+        // Limpar flags — podem estar corrompidas
         try { localStorage.removeItem(WEBLLM_CACHE_KEY); } catch(e) {}
+        _idbClearCached().catch(() => {});
 
         if (progressWrap) progressWrap.style.display = 'none';
         if (statusDot)   statusDot.style.background   = '#EF4444';
@@ -5689,23 +5696,139 @@ function offAiQuickSend(text) {
     sendOfflineAIMessage();
 }
 
-// Verificar suporte a WebGPU quando o tab da IA local é aberto
-// Nome do modelo — constante para ser consistente em todo o código
-const WEBLLM_MODEL_ID = 'gemma-2-2b-it-q4f16_1-MLC';
-const WEBLLM_CACHE_KEY = 'nono_webllm_cached'; // localStorage flag
+// ─── Constantes do modelo ────────────────────────────────────────────────────
+const WEBLLM_MODEL_ID  = 'Phi-3.5-mini-instruct-q4f16_1-MLC';
+const WEBLLM_CACHE_KEY = 'nono_webllm_cached';      // localStorage flag (fallback 1)
+const WEBLLM_IDB_DB    = 'nono_webllm_meta';        // IndexedDB flag   (fallback 2)
+const WEBLLM_IDB_STORE = 'meta';
+const WEBLLM_IDB_KEY   = 'model_cached';
 
+// ─── Escrever flag IndexedDB ──────────────────────────────────────────────────
+function _idbSetCached(value) {
+    return new Promise(resolve => {
+        try {
+            const req = indexedDB.open(WEBLLM_IDB_DB, 1);
+            req.onupgradeneeded = e => e.target.result.createObjectStore(WEBLLM_IDB_STORE);
+            req.onsuccess = e => {
+                try {
+                    const tx = e.target.result.transaction(WEBLLM_IDB_STORE, 'readwrite');
+                    tx.objectStore(WEBLLM_IDB_STORE).put(value, WEBLLM_IDB_KEY);
+                    tx.oncomplete = () => resolve(true);
+                    tx.onerror    = () => resolve(false);
+                } catch(_) { resolve(false); }
+            };
+            req.onerror = () => resolve(false);
+        } catch(_) { resolve(false); }
+    });
+}
+
+// ─── Ler flag IndexedDB ───────────────────────────────────────────────────────
+function _idbGetCached() {
+    return new Promise(resolve => {
+        try {
+            const req = indexedDB.open(WEBLLM_IDB_DB, 1);
+            req.onupgradeneeded = e => e.target.result.createObjectStore(WEBLLM_IDB_STORE);
+            req.onsuccess = e => {
+                try {
+                    const tx = e.target.result.transaction(WEBLLM_IDB_STORE, 'readonly');
+                    const get = tx.objectStore(WEBLLM_IDB_STORE).get(WEBLLM_IDB_KEY);
+                    get.onsuccess = () => resolve(get.result === true);
+                    get.onerror   = () => resolve(false);
+                } catch(_) { resolve(false); }
+            };
+            req.onerror = () => resolve(false);
+        } catch(_) { resolve(false); }
+    });
+}
+
+// ─── Limpar flag IndexedDB ────────────────────────────────────────────────────
+function _idbClearCached() {
+    return new Promise(resolve => {
+        try {
+            const req = indexedDB.open(WEBLLM_IDB_DB, 1);
+            req.onsuccess = e => {
+                try {
+                    const tx = e.target.result.transaction(WEBLLM_IDB_STORE, 'readwrite');
+                    tx.objectStore(WEBLLM_IDB_STORE).delete(WEBLLM_IDB_KEY);
+                    tx.oncomplete = () => resolve(true);
+                    tx.onerror    = () => resolve(false);
+                } catch(_) { resolve(false); }
+            };
+            req.onerror = () => resolve(false);
+        } catch(_) { resolve(false); }
+    });
+}
+
+// ─── Verificar cache (triplo fallback) ───────────────────────────────────────
+// Camada 1: Cache API do browser (onde o WebLLM guarda os pesos do modelo)
+// Camada 2: IndexedDB — flag persistente, sobrevive a limpezas parciais de cache
+// Camada 3: localStorage — último recurso
+async function _isWebLLMCached() {
+    // CAMADA 1 — Cache API (fonte da verdade: verifica os ficheiros reais)
+    try {
+        const cacheNames   = await caches.keys();
+        const webllmCaches = cacheNames.filter(n => n.includes('webllm') || n.includes('mlc'));
+        if (webllmCaches.length > 0) {
+            for (const cacheName of webllmCaches) {
+                const cache = await caches.open(cacheName);
+                const keys  = await cache.keys();
+                if (keys.length >= 10) {
+                    // Confirmar encontrado — actualizar flags dos outros métodos
+                    _idbSetCached(true).catch(() => {});
+                    try { localStorage.setItem(WEBLLM_CACHE_KEY, 'true'); } catch(_) {}
+                    return true;
+                }
+            }
+            // Há caches WebLLM mas incompletas — limpar flags
+            _idbSetCached(false).catch(() => {});
+            try { localStorage.removeItem(WEBLLM_CACHE_KEY); } catch(_) {}
+            return false;
+        }
+    } catch(e) {
+        console.warn('[WebLLM] Cache API indisponível:', e.message);
+    }
+
+    // CAMADA 2 — IndexedDB (sobrevive a limpezas de Service Worker)
+    try {
+        const idbResult = await _idbGetCached();
+        if (idbResult) {
+            console.info('[WebLLM] Cache detectada via IndexedDB');
+            return true;
+        }
+    } catch(e) {
+        console.warn('[WebLLM] IndexedDB indisponível:', e.message);
+    }
+
+    // CAMADA 3 — localStorage (último recurso, mais frágil)
+    try {
+        const lsResult = localStorage.getItem(WEBLLM_CACHE_KEY) === 'true';
+        if (lsResult) {
+            console.info('[WebLLM] Cache detectada via localStorage');
+            return true;
+        }
+    } catch(e) {
+        console.warn('[WebLLM] localStorage indisponível:', e.message);
+    }
+
+    return false;
+}
+
+// ─── Verificar suporte WebGPU e estado do modelo ──────────────────────────────
 async function checkWebGPUSupport() {
-    const warnDiv   = document.getElementById('offAiDownloadWarn');
-    const loadBtn   = document.getElementById('offAiLoadBtn');
+    const warnDiv     = document.getElementById('offAiDownloadWarn');
+    const loadBtn     = document.getElementById('offAiLoadBtn');
+    const clearBtn    = document.getElementById('offAiClearCacheBtn');
     const statusTitle = document.getElementById('offAiStatusTitle');
     const statusSub   = document.getElementById('offAiStatusSub');
+    const statusDot   = document.getElementById('offAiStatusDot');
 
     // 1. Sem WebGPU — mostrar erro, desativar botão
     if (!navigator.gpu) {
         if (warnDiv) warnDiv.innerHTML =
             '❌ <strong>WebGPU não suportado.</strong> Usa o Chrome 113+ ou Edge 113+.<br>' +
             'O Assistente IA online funciona em qualquer browser.';
-        if (loadBtn) { loadBtn.disabled = true; loadBtn.style.opacity = '0.5'; loadBtn.textContent = '❌ WebGPU não suportado'; }
+        if (loadBtn)  { loadBtn.disabled  = true; loadBtn.style.opacity  = '0.5'; loadBtn.textContent  = '❌ WebGPU não suportado'; }
+        if (clearBtn) { clearBtn.disabled = true; clearBtn.style.opacity = '0.5'; }
         return;
     }
 
@@ -5715,45 +5838,74 @@ async function checkWebGPUSupport() {
         return;
     }
 
-    // 3. Verificar se o modelo está em cache no browser (Cache API)
+    // 3. Mostrar estado "A verificar cache..."
+    if (statusTitle) statusTitle.textContent = '🔍 A verificar cache...';
+    if (statusSub)   statusSub.textContent   = 'A confirmar se o modelo está guardado';
+    if (statusDot)   statusDot.style.background = '#F59E0B';
+
+    // 4. Verificar cache com triplo fallback
     const isCached = await _isWebLLMCached();
+
     if (isCached) {
-        // Modelo em cache — carregar silenciosamente (rápido, sem download)
-        if (warnDiv) warnDiv.style.display = 'none';
-        if (loadBtn) loadBtn.style.display = 'none';
+        // Modelo em cache — carregar automaticamente, sem download
+        if (warnDiv)  warnDiv.style.display  = 'none';
+        if (loadBtn)  loadBtn.style.display   = 'none';
+        if (clearBtn) clearBtn.style.display  = 'block';
         if (statusTitle) statusTitle.textContent = '⏳ A inicializar modelo...';
-        if (statusSub)   statusSub.textContent   = 'Modelo em cache — carrega em segundos';
-        const dot = document.getElementById('offAiStatusDot');
-        if (dot) dot.style.background = '#F59E0B';
-        // Carregar automaticamente
+        if (statusSub)   statusSub.textContent   = 'Modelo em cache — a carregar, aguarda';
         loadOfflineAI();
     } else {
         // Modelo não está em cache — mostrar botão de download
-        if (warnDiv) warnDiv.style.display = 'block';
-        if (loadBtn) { loadBtn.style.display = 'block'; loadBtn.textContent = '⬇️ Carregar Modelo Gemma 2B (~1.5GB)'; loadBtn.disabled = false; loadBtn.style.opacity = '1'; }
+        if (warnDiv)  warnDiv.style.display  = 'block';
+        if (loadBtn)  { loadBtn.style.display = 'block'; loadBtn.textContent = '⬇️ Carregar Modelo Phi-3.5 Mini (~2.3GB)'; loadBtn.disabled = false; loadBtn.style.opacity = '1'; }
+        if (clearBtn) clearBtn.style.display  = 'none'; // nada a limpar
         if (statusTitle) statusTitle.textContent = 'Modelo não descarregado';
-        if (statusSub)   statusSub.textContent   = 'Primeira utilização: descarrega ~1.5GB';
+        if (statusSub)   statusSub.textContent   = 'Primeira utilização: descarrega ~2.3GB';
+        if (statusDot)   statusDot.style.background = '#D1D5DB';
     }
 }
 
-// Verificar se o modelo WebLLM está em cache (Cache API do browser)
-async function _isWebLLMCached() {
+// Limpar cache do modelo WebLLM (útil quando o modelo está corrompido)
+async function clearOfflineAICache() {
+    const btn = document.getElementById('offAiClearCacheBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ A limpar...'; }
+
     try {
-        // WebLLM guarda numa cache chamada "webllm/model"
+        // Apagar todas as caches do WebLLM / MLC
         const cacheNames = await caches.keys();
         const webllmCaches = cacheNames.filter(n => n.includes('webllm') || n.includes('mlc'));
-        if (webllmCaches.length === 0) return false;
-        // Verificar se há ficheiros do modelo em cache (pelo menos os principais)
-        for (const cacheName of webllmCaches) {
-            const cache  = await caches.open(cacheName);
-            const keys   = await cache.keys();
-            // Se tiver pelo menos 10 ficheiros em cache, consideramos como "descarregado"
-            if (keys.length >= 10) return true;
-        }
-        return false;
-    } catch(e) {
-        // Fallback: usar localStorage como indicador
-        return localStorage.getItem(WEBLLM_CACHE_KEY) === 'true';
+        await Promise.all(webllmCaches.map(n => caches.delete(n)));
+
+        // Limpar flags dos 3 métodos
+        try { localStorage.removeItem(WEBLLM_CACHE_KEY); } catch(e) {}
+        await _idbClearCached().catch(() => {});
+
+        // Repor estado do motor
+        offlineEngine  = null;
+        offlineAIReady = false;
+        offlineAILoading = false;
+
+        // Repor UI
+        const statusTitle = document.getElementById('offAiStatusTitle');
+        const statusSub   = document.getElementById('offAiStatusSub');
+        const statusDot   = document.getElementById('offAiStatusDot');
+        const loadBtn     = document.getElementById('offAiLoadBtn');
+        const chatWrap    = document.getElementById('offAiChatWrap');
+        const warnDiv     = document.getElementById('offAiDownloadWarn');
+
+        if (statusTitle) statusTitle.textContent = 'Cache limpa';
+        if (statusSub)   statusSub.textContent   = 'Podes descarregar o modelo novamente';
+        if (statusDot)   { statusDot.style.background = '#D1D5DB'; statusDot.style.boxShadow = 'none'; }
+        if (chatWrap)    chatWrap.style.display   = 'none';
+        if (warnDiv)     warnDiv.style.display     = 'block';
+        if (loadBtn)     { loadBtn.style.display = 'block'; loadBtn.textContent = '⬇️ Carregar Modelo Phi-3.5 Mini (~2.3GB)'; loadBtn.disabled = false; loadBtn.style.opacity = '1'; }
+
+        showToast('🗑️ Cache limpa com sucesso!');
+    } catch(err) {
+        console.error('[clearCache]', err);
+        showToast('❌ Erro ao limpar cache: ' + (err.message || 'tenta novamente'));
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '🗑️ Limpar Cache do Modelo'; }
     }
 }
 
@@ -5769,10 +5921,12 @@ function _showOfflineAIChat() {
 
     if (warnDiv)   warnDiv.style.display   = 'none';
     if (loadBtn)   loadBtn.style.display   = 'none';
+    const clearBtn = document.getElementById('offAiClearCacheBtn');
+    if (clearBtn)  clearBtn.style.display  = 'none';
     if (progressW) progressW.style.display = 'none';
     if (chatWrap)  chatWrap.style.display  = 'block';
     if (dot)       { dot.style.background  = '#10B981'; dot.style.boxShadow = '0 0 6px #10B981'; }
-    if (statusTitle) statusTitle.textContent = '✅ Gemma 2B pronto!';
+    if (statusTitle) statusTitle.textContent = '✅ Phi-3.5 Mini pronto!';
     if (statusSub)   statusSub.textContent   = 'IA a correr localmente no dispositivo';
 }
 
