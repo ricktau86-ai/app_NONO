@@ -2411,6 +2411,11 @@ body::after {
 .dexc-high .dexc-range-fill { background: #F59E0B; }
 .dexc-urgent .dexc-value { color: #FCA5A5; }
 .dexc-urgent .dexc-range-fill { background: #EF4444; }
+.dexcom-card.dexc-stale { background: linear-gradient(135deg, #3a3d46 0%, #4a4e58 100%); }
+.dexc-stale .dexc-value { color: #B8BCC6; }
+.dexc-stale .dexc-range-fill { background: #8A8F9A; }
+.dexc-stale .dexc-trend, .dexc-stale #dexcTrendLabel { opacity: 0.4; }
+.dexc-stale .dexc-time { opacity: 0.95; color: #FCD34D; font-weight: 700; }
 
 </style>
 </head>
@@ -4170,18 +4175,36 @@ function _dexcBarPct(v) {
     return pct;
 }
 
-function _dexcParseTime(wt) {
-    // formato Dexcom: /Date(1234567890000+0000)/
-    try {
-        const ms = parseInt(wt.replace(/\/Date\((\d+)[^)]*\)\//, '$1'));
-        if (isNaN(ms)) return '';
-        const diff = Math.round((Date.now() - ms) / 60000);
-        if (diff < 1) return 'há menos de 1 min';
-        if (diff === 1) return 'há 1 min';
-        if (diff < 60) return `há ${diff} min`;
-        return `há ${Math.floor(diff/60)}h${diff%60 ? (' ' + diff%60 + 'm') : ''}`;
-    } catch(e) { return ''; }
+function _dexcWtToMs(wt) {
+    const m = String(wt || '').match(/(\d{10,})/);
+    return m ? parseInt(m[1], 10) : NaN;
 }
+
+function _dexcFormatAge(ms) {
+    if (isNaN(ms)) return '';
+    const hhmm = new Date(ms).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+    const diff = Math.max(0, Math.round((Date.now() - ms) / 60000));
+    let rel;
+    if (diff < 1) rel = 'agora mesmo';
+    else if (diff === 1) rel = 'há 1 min';
+    else if (diff < 60) rel = 'há ' + diff + ' min';
+    else rel = 'há ' + Math.floor(diff / 60) + 'h' + (diff % 60 ? (' ' + (diff % 60) + 'm') : '');
+    return hhmm + ' · ' + rel;
+}
+
+function _dexcTickTime() {
+    const card = document.getElementById('dexcomCard');
+    const el = document.getElementById('dexcTime');
+    if (!card || !el || !card.dataset.ms) return;
+    const ms = parseInt(card.dataset.ms, 10);
+    const off = card.dataset.offline === '1' ? '(offline) ' : '';
+    const stale = (Date.now() - ms) > 10 * 60000;
+    card.classList.toggle('dexc-stale', stale);
+    el.textContent = stale
+        ? '⚠️ Sem dados novos · ' + off + 'última leitura ' + _dexcFormatAge(ms)
+        : off + 'Última leitura ' + _dexcFormatAge(ms);
+}
+setInterval(_dexcTickTime, 30000);
 
 function _dexcUpdateCard(reading) {
     const card = document.getElementById('dexcomCard');
@@ -4191,19 +4214,20 @@ function _dexcUpdateCard(reading) {
     const trendInfo = DEXC_TRENDS[trend] || DEXC_TRENDS['Flat'];
     const level = _dexcValueLevel(val);
     const pct = _dexcBarPct(val);
-    const timeStr = _dexcParseTime(reading.WT);
+    const readMs = _dexcWtToMs(reading.WT);
 
     // atualizar classe de cor
     card.className = 'dexcom-card ' + level;
     document.getElementById('dexcValue').textContent = val;
     document.getElementById('dexcArrow').textContent = trendInfo.arrow;
     document.getElementById('dexcTrendLabel').textContent = trendInfo.label;
-    document.getElementById('dexcTime').textContent = timeStr ? 'Medido ' + timeStr : 'a atualizar…';
+    card.dataset.ms = isNaN(readMs) ? '' : String(readMs); card.dataset.offline = '0';
+    _dexcTickTime();
     document.getElementById('dexcBar').style.width = pct + '%';
     document.getElementById('dexcPointer').style.left = pct + '%';
 
     // guardar no localStorage para offline
-    localStorage.setItem(DEXC_LAST_STORE, JSON.stringify({ val, trend, trendInfo, level, pct, timeStr, ts: Date.now() }));
+    localStorage.setItem(DEXC_LAST_STORE, JSON.stringify({ val, trend, trendInfo, level, pct, readMs, ts: Date.now() }));
 }
 
 function _dexcShowLastCached() {
@@ -4219,8 +4243,8 @@ function _dexcShowLastCached() {
         document.getElementById('dexcValue').textContent = cached.val;
         document.getElementById('dexcArrow').textContent = cached.trendInfo.arrow;
         document.getElementById('dexcTrendLabel').textContent = cached.trendInfo.label;
-        const minStr = Math.round(age);
-        document.getElementById('dexcTime').textContent = `(offline) há ${minStr} min`;
+        card.dataset.ms = cached.readMs ? String(cached.readMs) : ''; card.dataset.offline = '1';
+        _dexcTickTime();
         document.getElementById('dexcBar').style.width = cached.pct + '%';
         document.getElementById('dexcPointer').style.left = cached.pct + '%';
         // dot cinzento quando offline
