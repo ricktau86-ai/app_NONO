@@ -4362,6 +4362,229 @@ function _dexcPopulateSettingsFields() {
 }
 /* FIM DEXCOM */
 
+/* Funções recuperadas do v29 */
+function clearAlertForm() {
+    ['alertTitle','alertMsg'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    const timeEl = document.getElementById('alertTime');
+    if (timeEl) timeEl.value = '20:00';
+    const repEl = document.getElementById('alertRepeat');
+    if (repEl) repEl.value = 'daily';
+}
+
+function deleteAlert(id) {
+    if (!id || !confirm("Apagar este lembrete?")) return;
+    if (db && currentUser) {
+        getRootRef().collection('alerts').doc(currentUser.uid).collection('items').doc(id)
+            .delete().then(() => showToast("🗑️ Lembrete apagado."));
+    }
+    alertsData = alertsData.filter(x => x.__id !== id);
+    // Remove from localStorage too
+    const localAlerts = JSON.parse(localStorage.getItem('nono_local_alerts') || '[]')
+        .filter(x => x.__id !== id);
+    localStorage.setItem('nono_local_alerts', JSON.stringify(localAlerts));
+    renderAlerts();
+}
+
+function nextTriggerStr(time, repeat) {
+    if (!time) return '';
+    const now = new Date();
+    const [h, m] = time.split(':').map(Number);
+    const next = new Date();
+    next.setHours(h, m, 0, 0);
+    if (next <= now) next.setDate(next.getDate() + 1);
+    const diff = Math.round((next - now) / 60000);
+    if (diff < 60) return `em ${diff} min`;
+    if (diff < 1440) return `em ${Math.round(diff/60)}h`;
+    return `amanhã às ${time}`;
+}
+
+function renderAlerts() {
+    const card = document.getElementById('alertsCard');
+    if (!card) return;
+    if (!alertsData.length) {
+        card.innerHTML = `<div class="card" style="text-align:center; padding:24px; color:var(--txt3);">
+            <div style="font-size:32px; margin-bottom:8px;">🔔</div>
+            <div style="font-weight:700; font-size:13px;">Sem lembretes ainda.</div>
+            <div style="font-size:11px; margin-top:4px;">Usa os atalhos rápidos abaixo!</div>
+        </div>`;
+        return;
+    }
+    card.innerHTML = alertsData.map(a => {
+        const repeatText = repeatLabel(a.repeat || 'none');
+        const nextText   = a.time ? nextTriggerStr(a.time, a.repeat) : '';
+        const enabled    = a.enabled !== false;
+        return `<div class="alert-item" style="margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                <div>
+                    <div class="alert-item-title">${a.title || '—'}</div>
+                    ${a.message ? `<div class="alert-item-msg">${a.message}</div>` : ''}
+                    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;">
+                        ${a.time ? `<span class="alert-badge" style="background:rgba(255,107,157,0.12); color:var(--p2);">🕐 ${a.time}</span>` : ''}
+                        <span class="alert-badge ${enabled ? '' : 'off'}">🔁 ${repeatText}</span>
+                        ${nextText ? `<span class="alert-badge" style="background:rgba(16,185,129,0.1); color:#047857;">⏰ ${nextText}</span>` : ''}
+                    </div>
+                </div>
+                <div style="display:flex; gap:6px; flex-shrink:0;">
+                    <button onclick="toggleAlert('${a.__id}', ${!enabled})" style="background:${enabled ? '#ECFDF5' : '#F3F4F6'}; color:${enabled ? '#047857' : '#6B7280'}; border:none; border-radius:8px; padding:6px 10px; font-size:11px; font-weight:800; cursor:pointer; font-family:var(--font-body);">
+                        ${enabled ? '✅' : '⏸️'}
+                    </button>
+                    <button onclick="deleteAlert('${a.__id}')" style="background:#FEE2E2; color:#B91C1C; border:none; border-radius:8px; padding:6px 10px; font-size:11px; font-weight:800; cursor:pointer; font-family:var(--font-body);">
+                        🗑️
+                    </button>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function repeatLabel(r) {
+    return { none:'Uma vez', daily:'Diário', weekdays:'Dias úteis', weekend:'Fim-de-semana', weekly:'Semanal' }[r] || r;
+}
+
+function scheduleLocalNotification(alertObj) {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'default') {
+        Notification.requestPermission();
+        return;
+    }
+    if (Notification.permission !== 'granted') return;
+
+    const [h, m] = alertObj.time.split(':').map(Number);
+    const now = new Date();
+    const fire = new Date();
+    fire.setHours(h, m, 0, 0);
+    if (fire <= now) fire.setDate(fire.getDate() + 1);
+    const delay = fire - now;
+
+    setTimeout(() => {
+        new Notification(`🦄 ${alertObj.title}`, {
+            body: alertObj.message || 'App Nonô',
+            icon: 'Gemini_Generated_Image_f4pi7bf4pi7bf4pi-removebg-preview.png',
+            tag: 'nono_' + alertObj.title,
+            renotify: true
+        });
+        // Se for repetição diária, reagendar para amanhã
+        if (alertObj.repeat === 'daily' || alertObj.repeat === 'weekdays' || alertObj.repeat === 'weekend') {
+            scheduleLocalNotification(alertObj);
+        }
+    }, delay);
+}
+
+function toggleAlert(id, enabled) {
+    if (!id) return;
+    if (db && currentUser) {
+        getRootRef().collection('alerts').doc(currentUser.uid).collection('items').doc(id)
+            .update({ enabled })
+            .then(() => showToast(enabled ? '✅ Ativo' : '⏸️ Pausado'));
+    }
+    const a = alertsData.find(x => x.__id === id);
+    if (a) { a.enabled = enabled; renderAlerts(); }
+}
+
+function addAlert() {
+    const title  = document.getElementById('alertTitle')?.value?.trim();
+    const msg    = document.getElementById('alertMsg')?.value?.trim();
+    const time   = document.getElementById('alertTime')?.value || '08:00';
+    const repeat = document.getElementById('alertRepeat')?.value || 'daily';
+
+    if (!title) { showToast("⚠️ Escreve um título!"); return; }
+
+    // Calcular próximo scheduledAt
+    const [h, m] = time.split(':').map(Number);
+    const scheduledAt = new Date();
+    scheduledAt.setHours(h, m, 0, 0);
+    if (scheduledAt <= new Date()) scheduledAt.setDate(scheduledAt.getDate() + 1);
+
+    const alertObj = {
+        title,
+        message: msg || '',
+        time,
+        repeat,
+        enabled: true,
+        scheduledAt,
+        createdAt: new Date()
+    };
+
+    // Guardar no Firestore (se online) e também em localStorage (para offline)
+    const localAlerts = JSON.parse(localStorage.getItem('nono_local_alerts') || '[]');
+    const localId = 'local_' + Date.now();
+    localAlerts.push({ ...alertObj, __id: localId, scheduledAt: scheduledAt.toISOString(), createdAt: new Date().toISOString() });
+    localStorage.setItem('nono_local_alerts', JSON.stringify(localAlerts));
+
+    if (db && currentUser && navigator.onLine) {
+        getRootRef().collection('alerts').doc(currentUser.uid).collection('items')
+            .add(alertObj)
+            .then(() => {
+                showToast("🔔 Lembrete criado!");
+                clearAlertForm();
+                scheduleLocalNotification(alertObj);
+            })
+            .catch(() => {
+                showToast("💾 Guardado localmente (offline)");
+                clearAlertForm();
+            });
+    } else {
+        showToast("💾 Guardado localmente!");
+        clearAlertForm();
+        scheduleLocalNotification(alertObj);
+        // Adicionar à lista local imediatamente
+        alertsData.push({ ...alertObj, __id: localId });
+        renderAlerts();
+    }
+}
+
+function quickAlert(title, msg, time, repeat) {
+    const titleEl = document.getElementById('alertTitle');
+    const msgEl   = document.getElementById('alertMsg');
+    const timeEl  = document.getElementById('alertTime');
+    const repEl   = document.getElementById('alertRepeat');
+    if (titleEl) titleEl.value = title;
+    if (msgEl)   msgEl.value   = msg;
+    if (timeEl)  timeEl.value  = time;
+    if (repEl)   repEl.value   = repeat;
+    addAlert();
+}
+
+function showGlobalSummary() {
+    let html = '<div style="font-size:13px;">';
+
+    // Plano
+    html += `<div style="font-weight:800; color:var(--p2); margin-bottom:8px; font-size:14px;">💉 Plano de Tratamento</div>`;
+    if (healthPlan.rows.length) {
+        healthPlan.rows.forEach(r => {
+            html += `<div class="summary-line">${r.start}–${r.end}<span class="summary-val">I:H ${r.ratio} · FSI ${r.fsi} · Alvo ${r.target}</span></div>`;
+        });
+        if (healthPlan.notes) html += `<div style="font-size:11px; color:var(--txt3); margin-top:6px; font-weight:600;">${healthPlan.notes}</div>`;
+    } else { html += '<div style="color:var(--txt3); font-size:12px; font-weight:600;">Sem plano configurado.</div>'; }
+
+    // Stock
+    html += `<div style="font-weight:800; color:var(--p2); margin:14px 0 8px; font-size:14px;">🧃 Despensa</div>`;
+    if (inventoryData.length) {
+        inventoryData.forEach(item => {
+            const low = item.home < 2 || item.rx < 2;
+            html += `<div class="summary-line">${item.name}${low ? ' ⚠️' : ''}<span class="summary-val">🏠${item.home||0} · 💊${item.rx||0}</span></div>`;
+        });
+    } else { html += '<div style="color:var(--txt3); font-size:12px; font-weight:600;">Sem items.</div>'; }
+
+    html += '</div>';
+    openModal('Resumo Geral 📋', html);
+}
+
+function toggleWeekday(btn) {
+    btn.classList.toggle('active');
+}
+
+function requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+}
+
+
+
 function toggleApp(k, v) {
     globalData.visibility[k] = v;
     const u = {}; u[`visibility.${k}`] = v;
@@ -6136,21 +6359,15 @@ function handleOffAiImage(input) {
         if (!container) return;
         const imgDiv = document.createElement('div');
         imgDiv.className = 'chat-msg user';
-        imgDiv.innerHTML = '<img src="' + src + '" style="max-width:180px; max-height:180px; border-radius:12px; display:block;" onclick="openImageModal('' + src + '')"><div style="font-size:11px; color:var(--txt3); margin-top:4px; font-weight:600;">📸 Foto enviada</div>';
+        imgDiv.innerHTML = '<img src="' + src + '" style="max-width:180px; max-height:180px; border-radius:12px; display:block;" onclick="openImageModal(\'' + src + '\')"><div style="font-size:11px; color:var(--txt3); margin-top:4px; font-weight:600;">📸 Foto enviada</div>';
         container.appendChild(imgDiv);
         container.scrollTop = container.scrollHeight;
 
         
         addOfflineAIMessage('bot',
-            '📸 Recebi a tua foto!
-
-' +
-            '⚠️ A IA local (Phi-3.5) <strong>não consegue analisar imagens</strong> — só processa texto.
-
-' +
-            '💡 Para analisar a foto e contar os HC, usa o <strong>Assistente IA</strong> no menu principal (precisa de internet + chave OpenAI). Esse usa o GPT-4o Vision e dá-te os HC ao detalhe.
-
-' +
+            '📸 Recebi a tua foto!\n\n' +
+            '⚠️ A IA local (Phi-3.5) <strong>não consegue analisar imagens</strong> — só processa texto.\n\n' +
+            '💡 Para analisar a foto e contar os HC, usa o <strong>Assistente IA</strong> no menu principal (precisa de internet + chave OpenAI). Esse usa o GPT-4o Vision e dá-te os HC ao detalhe.\n\n' +
             'Posso ajudar-te com outra coisa? 🦄'
         );
     };
@@ -6190,9 +6407,7 @@ async function sendOfflineAIMessage() {
             top_p:       0.9,
             max_tokens:  300,   
             stream:      true,
-            stop:        ['
-
-', '###', '<|end|>'],  
+            stop:        ['\n\n', '###', '<|end|>'],  
         });
 
         
@@ -6763,7 +6978,7 @@ try { initOfflineFeatures(); } catch(e) { console.warn('offline init:', e); }
 <script>
 (function() {
     var s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js';
+    s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js';
     s.onerror = function() {
         console.warn('[Chart.js] CDN falhou — gráficos desactivados');
         window.Chart = function() { return { destroy: function(){}, update: function(){} }; };
