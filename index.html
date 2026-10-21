@@ -4121,38 +4121,40 @@ function _dexcGetToken() {
 
 async function _dexcAuth(creds) {
     const srv = DEXC_SERVERS[creds.server] || DEXC_SERVERS.EU;
-    const body = JSON.stringify({
-        accountName: creds.user,
-        password: creds.pass,
-        applicationId: 'd8665ade-9673-4e27-9ff6-92db4ce13d13'
-    });
-    const r = await fetch(srv.auth, {
+    const base = srv.auth.replace('AuthenticatePublisherAccount','');
+    const r = await fetch(base + 'LoginPublisherAccountByName', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body
+        body: JSON.stringify({
+            accountName: creds.user,
+            password: creds.pass,
+            applicationId: 'd89443d2-327c-4a6f-89e5-496bbb0317db'
+        })
     });
-    if (!r.ok) throw new Error('Auth falhou: ' + r.status);
-    const token = (await r.text()).replace(/"/g,'').trim();
-    if (!token || token.length < 10) throw new Error('Token inválido');
-    localStorage.setItem(DEXC_TOKEN_STORE, JSON.stringify({ token, ts: Date.now() }));
-    return token;
+    const txt = (await r.text()).replace(/"/g,'').trim();
+    if (!r.ok) throw new Error('Login Dexcom falhou (' + r.status + ')');
+    if (!txt || txt.length < 10 || txt === '00000000-0000-0000-0000-000000000000')
+        throw new Error('Credenciais inválidas ou Share desligado');
+    localStorage.setItem(DEXC_TOKEN_STORE, JSON.stringify({ token: txt, ts: Date.now() }));
+    return txt;
 }
 
 async function _dexcFetchGlucose(creds, token) {
     const srv = DEXC_SERVERS[creds.server] || DEXC_SERVERS.EU;
-    const url = srv.data + '?sessionId=' + encodeURIComponent(token) + '&minutes=10&maxCount=1';
+    const url = srv.data + '?sessionId=' + encodeURIComponent(token) + '&minutes=1440&maxCount=1';
     const r = await fetch(url, {
-        headers: { 'Accept': 'application/json' }
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ sessionId: token, minutes: 1440, maxCount: 1 })
     });
     if (r.status === 500 || r.status === 401) {
-        // token expirado — forçar novo auth na próxima tentativa
         localStorage.removeItem(DEXC_TOKEN_STORE);
         throw new Error('token_expired');
     }
-    if (!r.ok) throw new Error('Data fetch falhou: ' + r.status);
+    if (!r.ok) throw new Error('Leitura falhou (' + r.status + ')');
     const data = await r.json();
-    if (!data || !data.length) throw new Error('sem_dados');
-    return data[0]; // { Value, Trend, WT }
+    if (!data || !data.length) throw new Error('Sem leituras nas últimas 24h (Share ativo na app Dexcom?)');
+    return data[0];
 }
 
 function _dexcValueLevel(v) {
@@ -4261,7 +4263,7 @@ async function _dexcRefresh() {
             // mostrar card com erro
             card.style.display = 'flex';
             document.getElementById('dexcValue').textContent = '---';
-            document.getElementById('dexcTime').textContent = 'Sem sinal · verifica ligação';
+            document.getElementById('dexcTime').textContent = 'Erro: ' + (e.message || 'sem sinal');
             const dot = document.getElementById('dexcDot');
             if (dot) { dot.style.background = '#EF4444'; dot.style.animation = 'none'; }
         }
